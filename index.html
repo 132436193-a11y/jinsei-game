@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>人生ゲーム 背景ボード版</title>
+<title>人生ゲーム 背景ボード＋コマ版</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body {
@@ -12,86 +12,53 @@ body {
   background-size: contain;
   height: 100vh;
 }
-#players {
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  margin: 10px;
-}
-.player {
-  background: rgba(255,255,255,0.8);
-  border-radius: 10px;
-  padding: 5px 10px;
-  margin: 5px;
-}
-.active {
-  transform: translateY(-10px);
-  border: 3px solid red;
-}
+#players { display: flex; justify-content: center; flex-wrap: wrap; margin: 10px; }
+.player { background: rgba(255,255,255,0.8); border-radius: 10px; padding: 5px 10px; margin: 5px; }
+.active { transform: translateY(-10px); border: 3px solid red; }
 
-#board {
-  position: relative;
-  width: 1024px; /* 画像サイズに合わせる */
-  height: 1024px;
-  margin: 20px auto;
-}
-
-.cell {
-  position: absolute;
-  width: 80px; height: 80px;
-  background: rgba(255,255,255,0.6);
-  border: 2px solid #333;
-  text-align: center;
-  line-height: 80px;
-  font-weight: bold;
-  cursor: pointer;
-  border-radius: 10px;
-}
-
+#board { position: relative; width:1024px; height:1024px; margin: 20px auto; }
+.cell { position:absolute; width:80px; height:80px; background: rgba(255,255,255,0.6);
+  border:2px solid #333; text-align:center; line-height:80px; font-weight:bold; border-radius:10px;}
 .cell.question { background:#ffe066; }
 .cell.goal { background:#90dbf4; }
 
-#dice { font-size: 60px; margin: 15px; }
-button { font-size: 18px; padding:10px 20px; margin:10px; border:none; border-radius:12px; background:#ff6f91; color:white; cursor:pointer;}
+#dice { font-size:60px; margin:15px; }
+button { font-size:18px; padding:10px 20px; margin:10px; border:none; border-radius:12px; background:#ff6f91; color:white; cursor:pointer;}
 button:hover { background:#ff4f7b; }
+
+.player-marker { position:absolute; font-weight:bold; padding:2px 5px; background:rgba(255,255,255,0.9); border-radius:5px; border:1px solid #333; }
 </style>
 </head>
 <body>
 
 <h1>🎉祝卒業！！部活版！！人生ゲーム！！🎉</h1>
-
 <div id="players"></div>
 <div id="dice">🎲</div>
 <button onclick="startDice()">回す</button>
 <button onclick="stopDice()">止める</button>
 
 <div id="board">
-  <!-- 25マスを仮座標で配置 -->
+  <!-- 25マス仮座標 -->
   <div class="cell question" data-num="1" style="top:900px; left:50px;">?</div>
   <div class="cell" data-num="2" style="top:900px; left:150px;">2</div>
   <div class="cell" data-num="3" style="top:900px; left:250px;">3</div>
   <div class="cell question" data-num="4" style="top:900px; left:350px;">?</div>
   <div class="cell" data-num="5" style="top:900px; left:450px;">5</div>
-
   <div class="cell" data-num="6" style="top:800px; left:450px;">6</div>
   <div class="cell question" data-num="7" style="top:700px; left:450px;">?</div>
   <div class="cell" data-num="8" style="top:700px; left:350px;">8</div>
   <div class="cell question" data-num="9" style="top:700px; left:250px;">?</div>
   <div class="cell" data-num="10" style="top:700px; left:150px;">10</div>
-
   <div class="cell" data-num="11" style="top:600px; left:150px;">11</div>
   <div class="cell question" data-num="12" style="top:600px; left:250px;">?</div>
   <div class="cell" data-num="13" style="top:600px; left:350px;">13</div>
   <div class="cell question" data-num="14" style="top:600px; left:450px;">?</div>
   <div class="cell" data-num="15" style="top:500px; left:450px;">15</div>
-
   <div class="cell question" data-num="16" style="top:400px; left:450px;">?</div>
   <div class="cell" data-num="17" style="top:400px; left:350px;">17</div>
   <div class="cell question" data-num="18" style="top:400px; left:250px;">?</div>
   <div class="cell" data-num="19" style="top:400px; left:150px;">19</div>
   <div class="cell goal" data-num="20" style="top:300px; left:150px;">GOAL</div>
-
-  <!-- 残り5マスは必要に応じて配置 -->
 </div>
 
 <script>
@@ -102,10 +69,26 @@ let rolling = false;
 let interval;
 let currentDice = 1;
 
-// プレイヤー名入力
+// 仮マス座標（25マス分）
+const positions = [
+  {top:900,left:50},{top:900,left:150},{top:900,left:250},{top:900,left:350},{top:900,left:450},
+  {top:800,left:450},{top:700,left:450},{top:700,left:350},{top:700,left:250},{top:700,left:150},
+  {top:600,left:150},{top:600,left:250},{top:600,left:350},{top:600,left:450},{top:500,left:450},
+  {top:400,left:450},{top:400,left:350},{top:400,left:250},{top:400,left:150},{top:300,left:150},
+  {top:300,left:250},{top:300,left:350},{top:300,left:450},{top:200,left:450},{top:200,left:350}
+];
+
+// プレイヤー名入力＋コマ作成
 for(let i=0;i<playerCount;i++){
   const name = prompt(`プレイヤー${i+1}の名前`);
   players.push({name,pos:0,money:10000});
+  const div = document.createElement("div");
+  div.className="player-marker";
+  div.id="player"+i;
+  div.innerHTML=name; // ここを <img src="画像.png"> に変えれば画像も可
+  div.style.top=positions[0].top+"px";
+  div.style.left=positions[0].left+"px";
+  document.getElementById("board").appendChild(div);
 }
 
 function drawPlayers(){
@@ -124,7 +107,7 @@ function startDice(){
   rolling = true;
   interval = setInterval(()=>{
     currentDice = Math.floor(Math.random()*6)+1;
-    document.getElementById("dice").textContent = currentDice;
+    document.getElementById("dice").textContent=currentDice;
   },100);
 }
 
@@ -135,17 +118,26 @@ function stopDice(){
   movePlayer(currentDice);
 }
 
+function updatePlayerPosition(index){
+  const p=players[index];
+  const el=document.getElementById("player"+index);
+  el.style.top=positions[p.pos].top+"px";
+  el.style.left=positions[p.pos].left+"px";
+}
+
 function movePlayer(num){
   const p=players[current];
-  p.pos=Math.min(25,p.pos+num);
-
-  // ？マス処理
+  p.pos=Math.min(24,p.pos+num);
+  
+  // ？マスでお金イベント
   if(p.pos%5===1 && p.pos!==20){
     const moneyEvents=[1000,5000,10000,-1000,-5000,-10000];
     const m=moneyEvents[Math.floor(Math.random()*moneyEvents.length)];
     p.money+=m;
     alert(`${p.name} は ${m>0?"+":"-"}${Math.abs(m)}円`);
   }
+
+  updatePlayerPosition(current);
 
   if(p.pos>=20){
     alert(`${p.name} ゴール！`);
