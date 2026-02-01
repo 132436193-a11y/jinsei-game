@@ -1,63 +1,160 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <title>祝卒業！！部活版！！人生ゲーム！！</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body {
-      font-family: "Hiragino Kaku Gothic ProN", sans-serif;
-      background: linear-gradient(135deg, #ffdde1, #ee9ca7);
-      text-align: center;
-      padding: 30px;
-    }
-    h1 {
-      font-size: 28px;
-      margin-bottom: 20px;
-    }
-    button {
-      font-size: 20px;
-      padding: 12px 24px;
-      border: none;
-      border-radius: 12px;
-      background: #ff6f91;
-      color: white;
-      cursor: pointer;
-    }
-    button:hover {
-      background: #ff4f7b;
-    }
-    #dice {
-      font-size: 80px;
-      margin: 30px 0;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>祝卒業！！部活版！！人生ゲーム！！</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body {
+  font-family: sans-serif;
+  background: linear-gradient(135deg,#ffdde1,#ee9ca7);
+  text-align: center;
+}
+h1 { margin: 10px; }
+
+#players {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin: 10px;
+}
+.player {
+  background: white;
+  border-radius: 10px;
+  padding: 5px 10px;
+  margin: 5px;
+}
+.active {
+  transform: translateY(-10px);
+  border: 3px solid red;
+}
+
+#money {
+  font-weight: bold;
+}
+
+#board {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 5px;
+  margin: 15px;
+}
+.cell {
+  background: white;
+  border-radius: 10px;
+  padding: 15px;
+  font-size: 14px;
+}
+.question { background: #ffe066; }
+.goal { background: #90dbf4; }
+
+button {
+  font-size: 18px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 12px;
+  background: #ff6f91;
+  color: white;
+  margin: 10px;
+}
+#dice { font-size: 60px; }
+</style>
 </head>
+
 <body>
 
-  <h1>🎉祝卒業！！部活版！！人生ゲーム！！🎉</h1>
+<h1>🎉祝卒業！！部活版！！人生ゲーム！！🎉</h1>
 
-  <div id="dice">🎲</div>
+<div id="players"></div>
+<div id="money"></div>
 
-  <button onclick="rollDice()">サイコロを回す</button>
+<div id="dice">🎲</div>
+<button onclick="rollDice()">サイコロ</button>
 
-  <script>
-    let rolling = false;
-    let interval;
+<div id="board"></div>
 
-    function rollDice() {
-      if (!rolling) {
-        rolling = true;
-        interval = setInterval(() => {
-          const num = Math.floor(Math.random() * 6) + 1;
-          document.getElementById("dice").textContent = num;
-        }, 100);
-      } else {
-        rolling = false;
-        clearInterval(interval);
-      }
-    }
-  </script>
+<script>
+const playerCount = 10;
+const players = [];
+let current = 0;
+let rolling = false;
+let interval;
+
+for(let i=0;i<playerCount;i++){
+  const name = prompt(`プレイヤー${i+1}の名前`);
+  players.push({name, pos:0, money:10000});
+}
+
+function drawPlayers(){
+  const div = document.getElementById("players");
+  div.innerHTML="";
+  players.forEach((p,i)=>{
+    const d=document.createElement("div");
+    d.className="player"+(i===current?" active":"");
+    d.innerHTML=`${p.name}<br>¥${p.money}`;
+    div.appendChild(d);
+  });
+  document.getElementById("money").textContent=
+    `${players[current].name} の番`;
+}
+
+const board=document.getElementById("board");
+for(let i=0;i<25;i++){
+  const c=document.createElement("div");
+  c.className="cell";
+  if(i===24){c.textContent="GOAL";c.classList.add("goal");}
+  else if(i%5===0){c.textContent="?";c.classList.add("question");}
+  else c.textContent=i;
+  board.appendChild(c);
+}
+
+function rollDice(){
+  if(!rolling){
+    rolling=true;
+    interval=setInterval(()=>{
+      document.getElementById("dice").textContent=
+        Math.floor(Math.random()*6)+1;
+    },100);
+  }else{
+    rolling=false;
+    clearInterval(interval);
+    movePlayer(Number(document.getElementById("dice").textContent));
+  }
+}
+
+function movePlayer(num){
+  const p=players[current];
+  p.pos=Math.min(24,p.pos+num);
+
+  if(p.pos%5===0 && p.pos!==24){
+    const moneyEvents=[1000,5000,10000,-1000,-5000,-10000];
+    const m=moneyEvents[Math.floor(Math.random()*6)];
+    p.money+=m;
+    alert(`${m>0?"+":""}${m}円`);
+  }
+
+  if(p.pos===24){
+    alert(`${p.name} ゴール！`);
+    showResult();
+    return;
+  }
+
+  current=(current+1)%players.length;
+  drawPlayers();
+}
+
+function showResult(){
+  let result="結果発表\n";
+  players.sort((a,b)=>b.money-a.money);
+  players.forEach(p=>{
+    result+=`${p.name}：¥${p.money}\n`;
+  });
+  alert(result);
+}
+
+drawPlayers();
+</script>
 
 </body>
 </html>
