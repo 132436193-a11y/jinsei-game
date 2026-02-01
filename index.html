@@ -1,12 +1,63 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<title>祝卒業！！部活版！！人生ゲーム！！</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8">
+  <title>祝卒業！！部活版！！人生ゲーム！！</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: "Hiragino Kaku Gothic ProN", sans-serif;
+      background: linear-gradient(135deg, #ffdde1, #ee9ca7);
+      text-align: center;
+      padding: 30px;
+    }
+    h1 {
+      font-size: 28px;
+      margin-bottom: 20px;
+    }
+    button {
+      font-size: 20px;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 12px;
+      background: #ff6f91;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #ff4f7b;
+    }
+    #dice {
+      font-size: 80px;
+      margin: 30px 0;
+    }
+  </style>
 </head>
 <body>
-<h1>祝卒業！！部活版！！人生ゲーム！！</h1>
-<p>スタート画面</p>
+
+  <h1>🎉祝卒業！！部活版！！人生ゲーム！！🎉</h1>
+
+  <div id="dice">🎲</div>
+
+  <button onclick="rollDice()">サイコロを回す</button>
+
+  <script>
+    let rolling = false;
+    let interval;
+
+    function rollDice() {
+      if (!rolling) {
+        rolling = true;
+        interval = setInterval(() => {
+          const num = Math.floor(Math.random() * 6) + 1;
+          document.getElementById("dice").textContent = num;
+        }, 100);
+      } else {
+        rolling = false;
+        clearInterval(interval);
+      }
+    }
+  </script>
+
 </body>
 </html>
