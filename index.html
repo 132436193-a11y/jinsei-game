@@ -2,26 +2,58 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>祝卒業！！部活版！！人生ゲーム！！</title>
+<title>人生ゲーム 背景ボード版</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body {
   font-family: sans-serif;
-  background: linear-gradient(135deg,#ffdde1,#ee9ca7);
   text-align: center;
-  padding: 20px;
+  background: url('A_digital_2D_illustration_of_a_board_game_in_the_s.png') no-repeat center center;
+  background-size: contain;
+  height: 100vh;
 }
-h1 { margin: 10px; }
-#players { display: flex; justify-content: center; flex-wrap: wrap; margin: 10px; }
-.player { background:white; border-radius:10px; padding:5px 10px; margin:5px; }
-.active { transform: translateY(-10px); border: 3px solid red; }
-#board { display: grid; grid-template-columns: repeat(5,1fr); gap:5px; margin:15px; }
-.cell { background:white; border-radius:10px; padding:15px; font-size:14px; }
-.question { background:#ffe066; }
-.goal { background:#90dbf4; }
-button { font-size:18px; padding:10px 20px; border:none; border-radius:12px; background:#ff6f91; color:white; margin:10px; cursor:pointer;}
+#players {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin: 10px;
+}
+.player {
+  background: rgba(255,255,255,0.8);
+  border-radius: 10px;
+  padding: 5px 10px;
+  margin: 5px;
+}
+.active {
+  transform: translateY(-10px);
+  border: 3px solid red;
+}
+
+#board {
+  position: relative;
+  width: 1024px; /* 画像サイズに合わせる */
+  height: 1024px;
+  margin: 20px auto;
+}
+
+.cell {
+  position: absolute;
+  width: 80px; height: 80px;
+  background: rgba(255,255,255,0.6);
+  border: 2px solid #333;
+  text-align: center;
+  line-height: 80px;
+  font-weight: bold;
+  cursor: pointer;
+  border-radius: 10px;
+}
+
+.cell.question { background:#ffe066; }
+.cell.goal { background:#90dbf4; }
+
+#dice { font-size: 60px; margin: 15px; }
+button { font-size: 18px; padding:10px 20px; margin:10px; border:none; border-radius:12px; background:#ff6f91; color:white; cursor:pointer;}
 button:hover { background:#ff4f7b; }
-#dice { font-size:60px; margin:15px; }
 </style>
 </head>
 <body>
@@ -32,7 +64,35 @@ button:hover { background:#ff4f7b; }
 <div id="dice">🎲</div>
 <button onclick="startDice()">回す</button>
 <button onclick="stopDice()">止める</button>
-<div id="board"></div>
+
+<div id="board">
+  <!-- 25マスを仮座標で配置 -->
+  <div class="cell question" data-num="1" style="top:900px; left:50px;">?</div>
+  <div class="cell" data-num="2" style="top:900px; left:150px;">2</div>
+  <div class="cell" data-num="3" style="top:900px; left:250px;">3</div>
+  <div class="cell question" data-num="4" style="top:900px; left:350px;">?</div>
+  <div class="cell" data-num="5" style="top:900px; left:450px;">5</div>
+
+  <div class="cell" data-num="6" style="top:800px; left:450px;">6</div>
+  <div class="cell question" data-num="7" style="top:700px; left:450px;">?</div>
+  <div class="cell" data-num="8" style="top:700px; left:350px;">8</div>
+  <div class="cell question" data-num="9" style="top:700px; left:250px;">?</div>
+  <div class="cell" data-num="10" style="top:700px; left:150px;">10</div>
+
+  <div class="cell" data-num="11" style="top:600px; left:150px;">11</div>
+  <div class="cell question" data-num="12" style="top:600px; left:250px;">?</div>
+  <div class="cell" data-num="13" style="top:600px; left:350px;">13</div>
+  <div class="cell question" data-num="14" style="top:600px; left:450px;">?</div>
+  <div class="cell" data-num="15" style="top:500px; left:450px;">15</div>
+
+  <div class="cell question" data-num="16" style="top:400px; left:450px;">?</div>
+  <div class="cell" data-num="17" style="top:400px; left:350px;">17</div>
+  <div class="cell question" data-num="18" style="top:400px; left:250px;">?</div>
+  <div class="cell" data-num="19" style="top:400px; left:150px;">19</div>
+  <div class="cell goal" data-num="20" style="top:300px; left:150px;">GOAL</div>
+
+  <!-- 残り5マスは必要に応じて配置 -->
+</div>
 
 <script>
 const playerCount = 10;
@@ -48,7 +108,6 @@ for(let i=0;i<playerCount;i++){
   players.push({name,pos:0,money:10000});
 }
 
-// プレイヤー表示
 function drawPlayers(){
   const div = document.getElementById("players");
   div.innerHTML="";
@@ -60,18 +119,6 @@ function drawPlayers(){
   });
 }
 
-// 盤面作成
-const board=document.getElementById("board");
-for(let i=0;i<25;i++){
-  const c=document.createElement("div");
-  c.className="cell";
-  if(i===24){ c.textContent="GOAL"; c.classList.add("goal"); }
-  else if(i%5===0){ c.textContent="?"; c.classList.add("question"); }
-  else c.textContent=i;
-  board.appendChild(c);
-}
-
-// サイコロ開始
 function startDice(){
   if(rolling) return;
   rolling = true;
@@ -81,7 +128,6 @@ function startDice(){
   },100);
 }
 
-// サイコロ停止＋進む
 function stopDice(){
   if(!rolling) return;
   rolling = false;
@@ -89,20 +135,19 @@ function stopDice(){
   movePlayer(currentDice);
 }
 
-// プレイヤー移動＋イベント
 function movePlayer(num){
   const p=players[current];
-  p.pos=Math.min(24,p.pos+num);
+  p.pos=Math.min(25,p.pos+num);
 
-  const cell=p.pos%5===0 && p.pos!==24;
-  if(cell){
+  // ？マス処理
+  if(p.pos%5===1 && p.pos!==20){
     const moneyEvents=[1000,5000,10000,-1000,-5000,-10000];
     const m=moneyEvents[Math.floor(Math.random()*moneyEvents.length)];
     p.money+=m;
     alert(`${p.name} は ${m>0?"+":"-"}${Math.abs(m)}円`);
   }
 
-  if(p.pos===24){
+  if(p.pos>=20){
     alert(`${p.name} ゴール！`);
     showResult();
     return;
@@ -112,7 +157,6 @@ function movePlayer(num){
   drawPlayers();
 }
 
-// ゴール結果表示
 function showResult(){
   let result="🏁 結果発表 🏁\n";
   players.sort((a,b)=>b.money-a.money);
@@ -120,7 +164,6 @@ function showResult(){
   alert(result);
 }
 
-// 初期描画
 drawPlayers();
 </script>
 
