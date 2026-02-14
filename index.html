@@ -72,15 +72,44 @@ updatePlayers();
 
 function rollDice(){
 
+  function rollDice(){
+
   let dice = Math.floor(Math.random()*6)+1;
 
+  let player = players[currentPlayer];
+
   document.getElementById("diceResult").innerText =
-  players[currentPlayer].name + " は " + dice + " が出た！";
+  player.name + " は " + dice + " が出た！";
 
-  players[currentPlayer].position += dice;
+  player.position += dice;
 
-  if(players[currentPlayer].position > 35){
-    players[currentPlayer].position = 35;
+  if(player.position > 35){
+    player.position = 35;
+  }
+
+  // ▼ ご褒美マス判定
+  if(rewardSquares.includes(player.position)){
+
+    let reward = Math.floor(Math.random()*5)+1;
+
+    if(reward === 1){
+      player.money += 3000;
+      alert("🎉 +3000円！");
+    }
+    else if(reward === 2){
+      player.money += 5000;
+      alert("🎉 +5000円！");
+    }
+    else if(reward === 3){
+      player.money += 10000;
+      alert("🎉 +10000円！");
+    }
+    else if(reward === 4){
+      alert("🥤 ジュースゲット！");
+    }
+    else{
+      alert("🍪 お菓子ゲット！");
+    }
   }
 
   updatePlayers();
@@ -91,6 +120,3 @@ function rollDice(){
     currentPlayer = 0;
   }
 }
-
-</script>
-
