@@ -1,360 +1,349 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>部活人生ゲーム</title>
+<title>部活人生ゲーム：テニス編</title>
 
 <style>
-body{
-  text-align:center;
-  font-family:sans-serif;
-}
+  :root {
+    --court-green: #2e8b57;
+    --line-white: #ffffff;
+    --clay-orange: #d2691e;
+  }
 
-#board{
-  display:grid;
-  grid-template-columns:repeat(7,80px);
-  gap:5px;
-  justify-content:center;
-  margin:20px;
-}
+  body {
+    text-align: center;
+    font-family: 'Helvetica Neue', Arial, "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
+    background-color: #f0f4f0;
+    margin: 0;
+    padding: 20px;
+  }
 
-.square{
-  border:2px solid black;
-  height:80px;
-  position:relative;
-  font-size:12px;
-}
+  h1 { color: var(--court-green); margin-bottom: 10px; }
 
-.playerToken{
-  width:14px;
-  height:14px;
-  border-radius:50%;
-  display:inline-block;
-  margin:2px;
-  border:2px solid white;
-}
+  /* サイコロエリア */
+  #diceContainer {
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+  }
 
-#moneyArea{
-  display:flex;
-  flex-wrap:wrap;
-  justify-content:center;
-  gap:10px;
-  margin:15px 0;
-}
+  #diceDisplay {
+    width: 60px;
+    height: 60px;
+    line-height: 60px;
+    font-size: 32px;
+    background: white;
+    border: 3px solid var(--court-green);
+    border-radius: 10px;
+    font-weight: bold;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  }
 
-.moneyCard{
-  padding:8px 12px;
-  border-radius:10px;
-  background:#f5f5f5;
-  border:2px solid #333;
-  font-size:14px;
-}
+  /* イベント表示エリア */
+  #eventArea {
+    min-height: 40px;
+    max-width: 800px;
+    margin: 10px auto 20px;
+    padding: 15px;
+    background: #fffbe6;
+    border-left: 10px solid #f1c40f;
+    font-weight: bold;
+    font-size: 1.1rem;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  }
 
-.activeTurn{
-  transform:scale(1.1);
-  background:#ffeaa7;
-}
+  /* ボードのデザイン */
+  #board {
+    display: grid;
+    /* 7列、各120pxに広げました */
+    grid-template-columns: repeat(7, 125px); 
+    gap: 10px;
+    justify-content: center;
+    margin: 20px auto;
+    background: #ccc; /* 道路（隙間）の色 */
+    padding: 15px;
+    border-radius: 8px;
+  }
 
-.modal{
-  display:none;
-  position:fixed;
-  top:0;left:0;
-  width:100%;height:100%;
-  background:rgba(0,0,0,0.5);
-}
+  .square {
+    border: 2px solid var(--line-white);
+    min-height: 110px; /* 高さを確保 */
+    position: relative;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start; /* 上詰めで表示 */
+    padding: 8px 4px;
+    box-sizing: border-box;
+    border-radius: 4px;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.2);
+  }
 
-.modalContent{
-  background:white;
-  padding:20px;
-  margin:100px auto;
-  width:300px;
-}
+  /* マスの色分け */
+  .type-start  { background-color: #27ae60 !important; }
+  .type-normal { background-color: var(--court-green); }
+  .type-reward { background-color: #f1c40f; color: #333 !important; }
+  .type-mini   { background-color: #e74c3c; }
+  .type-warp   { background-color: #3498db; }
+  .type-goal   { background-color: #2c3e50; }
+
+  .square-num { font-size: 12px; margin-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.5); width: 100%; }
+  .square-text { font-size: 12px; font-weight: bold; line-height: 1.3; word-break: break-all; margin-bottom: 5px;}
+  .square-price { font-size: 11px; background: rgba(0,0,0,0.2); padding: 1px 4px; border-radius: 3px; }
+
+  /* プレイヤーの駒 */
+  .token-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: auto; /* 下側に配置 */
+    min-height: 20px;
+    width: 100%;
+  }
+
+  .playerToken {
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    margin: 1px;
+    border: 2px solid white;
+    box-shadow: 0 0 3px rgba(0,0,0,0.5);
+  }
+
+  /* 所持金エリア */
+  #moneyArea { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin: 20px; }
+  .moneyCard {
+    padding: 10px;
+    border-radius: 8px;
+    background: white;
+    border: 2px solid #ddd;
+    min-width: 110px;
+  }
+  .activeTurn { border: 4px solid var(--court-green) !important; transform: scale(1.1); z-index: 5; }
+
+  button {
+    padding: 15px 30px;
+    font-size: 18px;
+    background: var(--court-green);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    box-shadow: 0 4px #1e5d3a;
+  }
+  button:disabled { background: #ccc; box-shadow: none; }
+
+  .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:100; }
+  .modalContent { background:white; padding:30px; margin:80px auto; width:300px; border-radius:20px; }
 </style>
 </head>
-
 <body>
 
-<h1>🎾 部活人生ゲーム 🎲</h1>
+<h1>🎾 部活人生ゲーム：テニス編 🎲</h1>
+
+<div id="diceContainer">
+  <div id="diceDisplay">?</div>
+  <button id="diceBtn" onclick="rollDice()">🎲 サイコロを振る</button>
+</div>
+
+<div id="eventArea">部活へようこそ！サイコロを振ってね。</div>
 
 <div id="board"></div>
 
-<button onclick="rollDice()">🎲 サイコロ</button>
-
-<h2>💰 所持金</h2>
+<h2>💰 プレイヤー情報</h2>
 <div id="moneyArea"></div>
 
 <div id="resultModal" class="modal">
   <div class="modalContent">
-    <h2>🏆 最終結果 🏆</h2>
-    <div id="rankingArea"></div>
+    <h2>🏆 最終成績 🏆</h2>
+    <div id="rankingArea" style="text-align:left; font-size:18px;"></div>
+    <button style="margin-top:20px" onclick="location.reload()">もう一度遊ぶ</button>
   </div>
 </div>
 
 <script>
+// ===== データ設定 =====
+const boardConfig = [
+  {type:"start", text:"スタート"},
+  {type:"normal", text:"ラケット粉砕", money:-20000},
+  {type:"normal", text:"自転車パンク", money:-2000},
+  {type:"reward", text:"OBの差し入れ", money:3000},
+  {type:"normal", text:"大会出場決定", money:5000},
+  {type:"mini", text:"現実ミニゲーム", money:0},
+  {type:"normal", text:"先輩に怒られる", money:-1000},
+  {type:"warp", text:"ワープ！"},
+  {type:"normal", text:"試合に勝利！", money:3000},
+  {type:"normal", text:"練習試合敗北", money:-2000},
+  {type:"reward", text:"ドリンク獲得", money:500},
+  {type:"normal", text:"雨でオフ", money:0},
+  {type:"mini", text:"現実ミニゲーム", money:0},
+  {type:"normal", text:"雪で筋トレ", money:-1000},
+  {type:"warp", text:"ワープ！"},
+  {type:"normal", text:"フォーム迷走", money:-1000},
+  {type:"reward", text:"臨時ボーナス", money:10000},
+  {type:"normal", text:"ミスで発狂", money:-1000},
+  {type:"mini", text:"現実ミニゲーム", money:0},
+  {type:"normal", text:"スコアプラス", money:2000},
+  {type:"warp", text:"ワープ！"},
+  {type:"normal", text:"スコアマイナス", money:-1500},
+  {type:"normal", text:"ガット張替", money:-2000},
+  {type:"reward", text:"お菓子獲得", money:300},
+  {type:"mini", text:"現実ミニゲーム", money:0},
+  {type:"normal", text:"顧問に褒められる", money:1000},
+  {type:"warp", text:"ワープ！"},
+  {type:"normal", text:"サーブ迷走", money:-1000},
+  {type:"reward", text:"部費の余り", money:5000},
+  {type:"normal", text:"すねにぶつける", money:-1000},
+  {type:"mini", text:"現実ミニゲーム", money:0},
+  {type:"normal", text:"最高の一打", money:2000},
+  {type:"goal", text:"引退！お疲れ様"}
+];
 
-  function showEvent(text){
-  const area = document.getElementById("eventArea");
-  area.innerText = text;
+// ===== 初期設定 =====
+let playerCount = parseInt(prompt("人数を入力してください(1-14)")) || 1;
+if(playerCount > 14) playerCount = 14;
+
+const playerColors = ["#ff4757","#2f3542","#2ed573","#ffa502","#a29bfe","#fd79a8","#8b4513","#333","#ffd700","#0fbcf9","#00d2d3","#f368e0","#636e72","#0652DD"];
+let players = [];
+for(let i=0; i<playerCount; i++){
+  let name = prompt((i+1) + "人目の名前") || "部員" + (i+1);
+  players.push({ name: name, position: 0, money: 0, finished: false, color: playerColors[i] });
 }
 
-// ===== プレイヤー作成 =====
-let playerCount = parseInt(prompt("何人で遊ぶ？（最大14人）"));
-if(playerCount>14) playerCount=14;
+let currentPlayer = 0;
+let isRolling = false;
 
-const playerColors=[
-"red","blue","green","orange","purple",
-"pink","brown","black","gold","cyan",
-"lime","magenta","gray","navy"
-];
-
-let players=[];
-for(let i=0;i<playerCount;i++){
-  let name=prompt((i+1)+"人目の名前");
-  players.push({
-    name:name,
-    position:0,
-    money:0,
-    finished:false,
-    color:playerColors[i]
-  });
-}
-
-let currentPlayer=0;
-
-// ===== 盤面設定 =====
-const board=[
-"start",
-"normal","normal","reward","normal","mini","normal","warp",
-"normal","normal","reward","normal","mini","normal","warp",
-"normal","reward","normal","mini","normal","warp",
-"normal","normal","reward","mini","normal","warp",
-"normal","reward","normal","mini","normal","warp",
-"normal","goal"
-];
-
-// 通常マス位置（0スタート）
-const normalSquares=[
-1,2,4,6,8,9,11,13,15,17,
-19,21,22,25,27,29,31,33
-];
-
-// 通常イベント18個
-const normalEvents=[
-
-{ text:"スマッシュでラケット粉砕。買い替え。", money:-20000 },
-{ text:"練習行こうとしたらパンク。", money:-2000 },
-{ text:"ラインに躓いてローリング大爆笑。", money:0 },
-{ text:"中国大会出場決定！", money:5000 },
-{ text:"先輩に怒られる。", money:-1000 },
-{ text:"うるさくしすぎておばさん登場。", money:-2000 },
-{ text:"試合に勝利！", money:3000 },
-{ text:"試合に敗北。", money:-2000 },
-{ text:"雨でオフ。", money:0 },
-{ text:"雪が降ってテンション爆上げ。", money:1000 },
-{ text:"ラケットをすねに当てて絶叫。", money:-1000 },
-{ text:"ミスって発狂。", money:-1000 },
-{ text:"スコアがプラスで喜ぶ。", money:2000 },
-{ text:"スコアがマイナスで悲しむ。", money:-1500 },
-{ text:"OBから差し入れ！", money:3000 },
-{ text:"ラケットのガット張り替え。", money:-2000 },
-{ text:"サーブのフォーム迷走中。", money:-1000 },
-{ text:"顧問に褒められる。", money:1000 }
-
-];
-
-// ===== 盤面描画 =====
-const boardDiv=document.getElementById("board");
-
-board.forEach((type,index)=>{
-  const square=document.createElement("div");
-  square.className="square";
-  square.id="square"+index;
-
-  if(type==="normal") square.style.background="white";
-  if(type==="reward") square.style.background="yellow";
-  if(type==="mini") square.style.background="red";
-  if(type==="warp") square.style.background="lightblue";
-  if(type==="start") square.style.background="lightgreen";
-  if(type==="goal") square.style.background="lightgray";
-
-  square.innerHTML=(index+1);
+// ===== ボード描画 =====
+const boardDiv = document.getElementById("board");
+boardConfig.forEach((cell, i) => {
+  const square = document.createElement("div");
+  square.className = `square type-${cell.type}`;
+  square.id = `square${i}`;
+  
+  let moneyDisp = cell.money ? `<div class="square-price">${cell.money > 0 ? '+' : ''}${cell.money}円</div>` : "";
+  square.innerHTML = `
+    <div class="square-num">${i}</div>
+    <div class="square-text">${cell.text}</div>
+    ${moneyDisp}
+    <div class="token-container" id="container${i}"></div>
+  `;
   boardDiv.appendChild(square);
 });
 
-// ===== 表示更新 =====
-function updateBoard(){
-
-  document.querySelectorAll(".playerToken").forEach(el=>el.remove());
-
-  players.forEach(p=>{
-    const square=document.getElementById("square"+p.position);
-    if(square){
-      const token=document.createElement("div");
-      token.className="playerToken";
-      token.style.backgroundColor=p.color;
-      token.title=p.name;
-      square.appendChild(token);
+function updateDisplay() {
+  // 駒の移動
+  document.querySelectorAll(".playerToken").forEach(el => el.remove());
+  players.forEach(p => {
+    const container = document.getElementById(`container${p.position}`);
+    if(container) {
+      const token = document.createElement("div");
+      token.className = "playerToken";
+      token.style.backgroundColor = p.color;
+      container.appendChild(token);
     }
   });
-}
 
-function updateMoneyDisplay(){
-
-  const area=document.getElementById("moneyArea");
-  area.innerHTML="";
-
-  players.forEach((p,i)=>{
-    const card=document.createElement("div");
-    card.className="moneyCard";
-    if(i===currentPlayer) card.classList.add("activeTurn");
-
-    card.innerHTML=`
-      <div style="color:${p.color}; font-weight:bold;">
-        ● ${p.name}
-      </div>
-      💰 ${p.money}円
-    `;
-
+  // 所持金の更新
+  const area = document.getElementById("moneyArea");
+  area.innerHTML = "";
+  players.forEach((p, i) => {
+    const card = document.createElement("div");
+    card.className = "moneyCard" + (i === currentPlayer ? " activeTurn" : "");
+    if(p.finished) card.style.opacity = "0.5";
+    card.innerHTML = `<b style="color:${p.color}">● ${p.name}</b><br>💰 ${p.money}円`;
     area.appendChild(card);
   });
 }
 
-// ===== サイコロ =====
-function rollDice(){
+// ===== サイコロを振る =====
+function rollDice() {
+  if(isRolling) return;
+  const p = players[currentPlayer];
+  if(p.finished) { checkNextTurn(); return; }
 
-  if(players[currentPlayer].finished) return;
-
-  const dice=Math.floor(Math.random()*6)+1;
-showEvent(players[currentPlayer].name+" は "+dice+" マス進む");
-
-
-  players[currentPlayer].position+=dice;
-
-  if(players[currentPlayer].position>=34){
-    players[currentPlayer].position=34;
-    players[currentPlayer].finished=true;
-  }
-
-  handleSquare();
-  updateBoard();
-}
+  isRolling = true;
+  document.getElementById("diceBtn").disabled = true;
+  const diceEl = document.getElementById("diceDisplay");
   
-<h2>📢 イベント</h2>
-<div id="eventArea" style="
-  min-height:60px;
-  margin:10px auto;
-  width:400px;
-  border:2px solid #333;
-  border-radius:10px;
-  padding:10px;
-  background:#fffbe6;
-  font-weight:bold;
-"></div>
-
-// ===== マス処理 =====
-function handleSquare(){
-
-  const player=players[currentPlayer];
-  const squareType=board[player.position];
-
-  if(squareType==="normal"){
-    const index=normalSquares.indexOf(player.position);
-    const event=normalEvents[index];
-    showEvent(event.text);
-    player.money+=event.money;
-    updateMoneyDisplay();
-    nextTurn();
-    return;
-  }
-
-  if(squareType==="reward"){
-    spinReward();
-    return;
-  }
-
-  if(squareType==="mini"){
-    showEvent("ミニゲーム発生！");
-    nextTurn();
-    return;
-  }
-
-  if(squareType==="warp"){
-    const move=Math.floor(Math.random()*3)+1;
-    if(Math.random()<0.5){
-      player.position+=move;
-      showEvent("ワープで "+move+" マス進んだ！");
-    }else{
-      player.position-=move;
-      if(player.position<0) player.position=0;
-      showEvent("ワープで "+move+" マス戻った！");
+  // サイコロが回るアニメーション
+  let count = 0;
+  const timer = setInterval(() => {
+    diceEl.innerText = Math.floor(Math.random() * 6) + 1;
+    count++;
+    if(count > 12) {
+      clearInterval(timer);
+      const val = Math.floor(Math.random() * 6) + 1;
+      diceEl.innerText = val;
+      executeMove(val);
     }
-    updateBoard();
-    nextTurn();
-    return;
+  }, 50);
+}
+
+function executeMove(steps) {
+  const p = players[currentPlayer];
+  p.position += steps;
+
+  // ゴール処理
+  if(p.position >= boardConfig.length - 1) {
+    p.position = boardConfig.length - 1;
+    p.finished = true;
   }
 
-  if(squareType==="goal"){
-    showEvent(player.name+" ゴール！");
-    nextTurn();
+  const cell = boardConfig[p.position];
+  let message = `${p.name}は ${steps} 進んで 「${cell.text}」！`;
+
+  // マス効果
+  if(cell.money) {
+    p.money += cell.money;
+  } else if(cell.type === "warp") {
+    const jump = Math.floor(Math.random() * 2) + 1;
+    if(Math.random() > 0.5) {
+      p.position = Math.min(p.position + jump, boardConfig.length - 1);
+      message += ` さらに ${jump}マス進む！`;
+    } else {
+      p.position = Math.max(p.position - jump, 0);
+      message += ` 残念... ${jump}マス戻る。`;
+    }
+  } else if(cell.type === "mini") {
+    message += "【現実でミニゲーム！】";
+  }
+
+  document.getElementById("eventArea").innerText = message;
+  updateDisplay();
+  
+  setTimeout(() => {
+    isRolling = false;
+    document.getElementById("diceBtn").disabled = false;
     checkGameEnd();
+    checkNextTurn();
+  }, 1000);
+}
+
+function checkNextTurn() {
+  if(players.every(pl => pl.finished)) return;
+  do {
+    currentPlayer = (currentPlayer + 1) % players.length;
+  } while (players[currentPlayer].finished);
+  updateDisplay();
+}
+
+function checkGameEnd() {
+  if(players.every(p => p.finished)) {
+    const modal = document.getElementById("resultModal");
+    const area = document.getElementById("rankingArea");
+    const ranking = [...players].sort((a, b) => b.money - a.money);
+    area.innerHTML = ranking.map((p, i) => `<div>${i+1}位：<b>${p.name}</b> (${p.money}円)</div>`).join("");
+    modal.style.display = "block";
   }
 }
 
-// ===== ご褒美 =====
-function spinReward(){
-
-  const rewards=[
-  {text:"+3000円",money:3000},
-  {text:"+5000円",money:5000},
-  {text:"+10000円",money:10000},
-  {text:"ジュース獲得",money:0},
-  {text:"お菓子獲得",money:0}
-  ];
-
-  const result=rewards[Math.floor(Math.random()*rewards.length)];
-
-  showEvent("ご褒美！ "+result.text);
-
-  players[currentPlayer].money+=result.money;
-
-  updateMoneyDisplay();
-  nextTurn();
-}
-
-// ===== ターン =====
-function nextTurn(){
-  currentPlayer++;
-  if(currentPlayer>=players.length) currentPlayer=0;
-  updateMoneyDisplay();
-}
-
-// ===== 終了判定 =====
-function checkGameEnd(){
-
-  if(players.every(p=>p.finished)){
-    showRanking();
-  }
-}
-
-function showRanking(){
-
-  const modal=document.getElementById("resultModal");
-  const area=document.getElementById("rankingArea");
-
-  const ranking=[...players].sort((a,b)=>b.money-a.money);
-
-  area.innerHTML="";
-  ranking.forEach((p,i)=>{
-    area.innerHTML+=`<div>${i+1}位 ${p.name} 💰${p.money}円</div>`;
-  });
-
-  modal.style.display="block";
-  document.querySelector("button").disabled=true;
-}
-
-updateBoard();
-updateMoneyDisplay();
-
+// 起動
+updateDisplay();
 </script>
 </body>
 </html>
