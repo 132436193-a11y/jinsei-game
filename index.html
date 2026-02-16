@@ -2,75 +2,70 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>テニス部人生ゲーム：現実対決版</title>
+<title>テニス部人生ゲーム：レジェンド・エディション</title>
 <style>
-  :root { --court-green: #2e8b57; --gold: #ffd700; }
-  html, body { height: 100%; margin: 0; overflow: hidden; font-family: sans-serif; background-color: #1a1a1a; color: #333; }
+  :root { --court-green: #2e8b57; --gold: #ffd700; --red: #e74c3c; --blue: #3498db; }
+  html, body { height: 100%; margin: 0; overflow: hidden; font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #1a1a1a; color: #333; }
 
   /* レイアウト */
   .main-container { display: flex; height: 100vh; padding: 10px; box-sizing: border-box; gap: 15px; }
-  #sidebar { flex: 0 0 240px; background: rgba(255, 255, 255, 0.9); border-radius: 15px; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+  #sidebar { flex: 0 0 260px; background: rgba(255, 255, 255, 0.9); border-radius: 15px; padding: 10px; display: flex; flex-direction: column; gap: 8px; box-shadow: 5px 0 15px rgba(0,0,0,0.3); }
   #game-area { flex: 1; display: flex; flex-direction: column; gap: 10px; }
   
-  #top-bar { background: white; padding: 10px; border-radius: 15px; display: flex; align-items: center; justify-content: space-around; }
-  #diceNum { font-size: 50px; font-weight: bold; color: var(--court-green); }
+  /* 上部バー */
+  #top-bar { background: white; padding: 10px; border-radius: 15px; display: flex; align-items: center; justify-content: space-around; position: relative; }
+  #diceNum { font-size: 60px; font-weight: bold; color: var(--court-green); text-shadow: 2px 2px 0 #eee; }
+  #collection-timer { position: absolute; right: 20px; top: 10px; background: var(--red); color: white; padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 14px; }
   
+  /* 盤面 */
   #board { display: grid; grid-template-columns: repeat(8, 1fr); gap: 5px; flex-grow: 1; }
-  .square { background: var(--court-green); border: 2px solid white; border-radius: 5px; color: white; padding: 5px; font-size: 11px; display: flex; flex-direction: column; justify-content: space-between; position: relative; }
+  .square { background: var(--court-green); border: 2px solid white; border-radius: 8px; color: white; padding: 5px; font-size: 11px; display: flex; flex-direction: column; justify-content: space-between; position: relative; box-shadow: 0 4px 0 rgba(0,0,0,0.2); }
   .type-start { background: #27ae60 !important; }
   .type-goal { background: #2c3e50 !important; }
   .type-reward { background: #f1c40f !important; color: #333 !important; }
-  .type-mini { background: #e74c3c !important; border: 3px solid #fff; box-shadow: inset 0 0 10px rgba(0,0,0,0.5); }
-  .type-warp { background: #3498db !important; }
+  .type-mini { background: var(--red) !important; border: 3px solid #fff; }
+  .type-warp { background: var(--blue) !important; }
 
-  /* プレイヤー情報 */
-  .money-card { padding: 8px; border-radius: 10px; background: #fff; border: 4px solid #ddd; font-size: 13px; position: relative; }
-  .active-p { border-color: #ffde59; box-shadow: 0 0 15px rgba(255,222,89,0.5); }
-  .is-awakened { border-color: var(--gold) !important; background: #fffde6 !important; animation: glow 1.5s infinite; }
-  @keyframes glow { 0% { box-shadow: 0 0 5px var(--gold); } 50% { box-shadow: 0 0 20px var(--gold); } 100% { box-shadow: 0 0 5px var(--gold); } }
-  .status-badge { font-size: 10px; padding: 2px 5px; border-radius: 5px; display: block; margin-top: 3px; font-weight: bold; }
-  .token { width: 16px; height: 16px; border-radius: 50%; border: 1px solid white; display: inline-block; margin: 1px; }
+  /* ステータスカード */
+  .money-card { padding: 10px; border-radius: 12px; background: #fff; border: 4px solid #ddd; font-size: 14px; transition: all 0.3s; }
+  .active-p { border-color: #ffde59; transform: scale(1.03); box-shadow: 0 0 20px rgba(255,222,89,0.6); }
+  .is-awakened { border-color: var(--gold) !important; background: #fffde6 !important; animation: glow 1s infinite alternate; }
+  @keyframes glow { from { box-shadow: 0 0 5px var(--gold); } to { box-shadow: 0 0 25px var(--gold); } }
+  .status-badge { font-size: 11px; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-top: 5px; font-weight: bold; color: white; }
 
-  /* ルール説明画面 */
-  #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 9999; display: none; justify-content: center; align-items: center; }
-  #rule-book { background: white; width: 85%; max-width: 800px; padding: 30px; border-radius: 30px; text-align: left; }
-  .rule-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0; font-size: 14px; }
-  .rule-item { background: #f9f9f9; padding: 15px; border-radius: 15px; border-left: 5px solid var(--court-green); }
+  /* 駒 */
+  .token { width: 22px; height: 22px; border-radius: 50%; border: 2px solid white; display: inline-block; margin: 2px; transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
 
-  /* 全画面イベント演出 */
-  #event-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 5000; justify-content: center; align-items: center; flex-direction: column; color: white; text-align: center; }
-  .event-card { background: white; color: #333; padding: 50px; border-radius: 30px; width: 80%; max-width: 900px; border: 10px solid var(--court-green); }
-  .awakened-card { border-color: var(--gold) !important; background: #fffde6 !important; }
-  .mini-game-card { border-color: #e74c3c !important; }
+  /* オーバーレイ共通 */
+  .full-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: none; justify-content: center; align-items: center; z-index: 10000; background: rgba(0,0,0,0.9); flex-direction: column; color: white; text-align: center; }
+  .event-card { background: white; color: #333; padding: 50px; border-radius: 40px; width: 80%; max-width: 900px; border: 12px solid var(--court-green); box-shadow: 0 0 50px rgba(0,0,0,0.5); }
+  .awakened-card { border-color: var(--gold) !important; background: linear-gradient(135deg, #fff, #fffde6) !important; }
   
-  button { padding: 15px 30px; font-size: 24px; background: var(--court-green); color: white; border: none; border-radius: 50px; cursor: pointer; transition: 0.2s; font-weight: bold; }
-  button:hover { transform: scale(1.1); }
+  button { padding: 18px 45px; font-size: 28px; background: var(--court-green); color: white; border: none; border-radius: 50px; cursor: pointer; font-weight: bold; box-shadow: 0 5px 0 #1e5e3a; transition: 0.1s; }
+  button:active { transform: translateY(3px); box-shadow: 0 2px 0 #1e5e3a; }
 </style>
 </head>
 <body>
 
-<div id="overlay">
-  <div id="rule-book">
-    <h1 style="text-align:center; color:var(--court-green);">🎾 テニス部人生ゲーム：現実対決</h1>
-    <div class="rule-grid">
-      <div class="rule-item"><b>⚡️ 覚醒（ゾーン）</b><br>良いこと2連発で突入。サイコロが「4以上」しか出ない無双状態！</div>
-      <div class="rule-item"><b>🧶 球拾い（休み）</b><br>悪いこと2連発で発生。1回休み。</div>
-      <div class="rule-item"><b>💰 緊急部費徴収</b><br>定期的に発生！全員-3000円。ただし、一番お金がない部員は免除！</div>
-      <div class="rule-item"><b>🔥 現実ミニゲーム</b><br>赤いマスに止まったら対決！結果が決まるまでゲームは待機します。</div>
+<div id="rule-overlay" class="full-overlay" style="display:none;">
+  <div class="event-card">
+    <h1 style="color:var(--court-green); font-size:45px; margin-top:0;">🎾 テニス部人生ゲーム</h1>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; text-align:left; margin:30px 0;">
+      <div style="background:#f9f9f9; padding:15px; border-radius:15px; border-left:8px solid var(--gold);"><b>⚡️ 覚醒</b>: 2回連続好調で突入！出目が4以上に固定。</div>
+      <div style="background:#f9f9f9; padding:15px; border-radius:15px; border-left:8px solid #888;"><b>🧶 球拾い</b>: 2回連続不調で発生。1回休み。</div>
+      <div style="background:#f9f9f9; padding:15px; border-radius:15px; border-left:8px solid var(--red);"><b>💰 部費徴収</b>: 数ターン毎。最下位以外から3000円。</div>
+      <div style="background:#f9f9f9; padding:15px; border-radius:15px; border-left:8px solid var(--blue);"><b>🤝 ダブルス</b>: ペアと運命共同体！</div>
     </div>
-    <div style="text-align:center;"><button onclick="closeRuleAndStart()">部活スタート！</button></div>
+    <button onclick="closeRule()">部活スタート！</button>
   </div>
 </div>
 
-<div id="event-overlay">
+<div id="event-overlay" class="full-overlay">
   <div id="ev-card" class="event-card">
-    <div id="ev-player" style="font-size:35px; font-weight:bold; margin-bottom:20px;"></div>
-    <div id="ev-text" style="font-size:60px; font-weight:bold; color:#e74c3c; margin-bottom:20px;"></div>
-    <div id="ev-money" style="font-size:30px; color:#666;"></div>
-    <div id="ev-instruction" style="display:none; color:#e74c3c; font-size:24px; font-weight:bold; margin-top:20px; border-top:2px solid #eee; padding-top:20px;">
-      👇 対決が終わったらボタンを押してね
-    </div>
-    <button id="ev-close" onclick="closeEvent()" style="margin-top:40px; display:none;">確認して次へ進む</button>
+    <div id="ev-player" style="font-size:35px; font-weight:bold;"></div>
+    <div id="ev-text" style="font-size:70px; font-weight:bold; margin:20px 0;"></div>
+    <div id="ev-money" style="font-size:35px; color:#666; margin-bottom:30px;"></div>
+    <button id="ev-close" onclick="closeEvent()">次へ進む</button>
   </div>
 </div>
 
@@ -83,41 +78,40 @@
     <div id="top-bar">
       <div id="diceNum">🎲 ?</div>
       <button id="diceBtn" onclick="rollDice()">サイコロを振る</button>
+      <div id="collection-timer">徴収まであと: <span id="turns-left">?</span> 手</div>
     </div>
     <div id="board"></div>
   </div>
 </div>
 
 <script>
-// マスの設定
 const squares = [
-  {t:"start", txt:"集合"}, {t:"normal", txt:"ラケット粉砕", m:-20000}, {t:"normal", txt:"チャリパンク", m:-2000}, {t:"reward", txt:"チャンス"},
+  {t:"start", txt:"集合"}, {t:"normal", txt:"ラケット粉砕", m:-20000}, {t:"normal", txt:"チャリパンク", m:-2000}, {t:"reward", txt:"臨時ボーナス"},
   {t:"normal", txt:"大会決定", m:5000}, {t:"mini", txt:"★腕相撲対決"}, {t:"warp", txt:"ワープ"}, {t:"normal", txt:"ダブルス練習", special:"doubles"},
-  {t:"normal", txt:"試合に勝利", m:3000}, {t:"reward", txt:"ドリンク"}, {t:"normal", txt:"雨でオフ", m:0}, {t:"mini", txt:"★柔軟対決"},
-  {t:"normal", txt:"雪で筋トレ", m:-1000}, {t:"warp", txt:"ワープ"}, {t:"normal", txt:"フォーム迷走", m:-1000}, {t:"reward", txt:"臨時ボーナス"},
+  {t:"normal", txt:"試合に勝利", m:3000}, {t:"reward", txt:"ドリンク奢り"}, {t:"normal", txt:"雨でオフ", m:0}, {t:"mini", txt:"★柔軟対決"},
+  {t:"normal", txt:"雪で筋トレ", m:-1000}, {t:"warp", txt:"ワープ"}, {t:"normal", txt:"フォーム迷走", m:-1000}, {t:"reward", txt:"OBの差し入れ"},
   {t:"normal", txt:"ダブルス大会", special:"doubles"}, {t:"mini", txt:"★目隠し素振り"}, {t:"normal", txt:"スコア＋", m:2000}, {t:"warp", txt:"ワープ"},
   {t:"normal", txt:"スコア－", m:-1500}, {t:"normal", txt:"ガット張替", m:-2000}, {t:"reward", txt:"おやつタイム"}, {t:"mini", txt:"★コミュ力対決"},
   {t:"normal", txt:"顧問に褒誉", m:1000}, {t:"warp", txt:"ワープ"}, {t:"normal", txt:"サーブ迷走", m:-1000}, {t:"reward", txt:"部費余り"},
   {t:"normal", txt:"すね強打", m:-1000}, {t:"mini", txt:"★フットワーク"}, {t:"normal", txt:"最高の一打", m:2000}, {t:"goal", txt:"引退！"}
 ];
 
-const rewards = [
-  {n:"お金 +3000円", v:3000, w:30}, {n:"お金 +20000円", v:20000, w:30},
-  {n:"お金 +5000円", v:5000, w:30}, {n:"🧃 ジュース現物", v:0, w:10}, {n:"🍪 お菓子現物", v:0, w:10}
-];
-
 let players = []; let turn = 0; let isMoving = false; let globalTurnCount = 0;
+const collectionInterval = 10; // 何手ごとに徴収するか
 
 window.onload = function() {
-  let count = parseInt(prompt("部員は何人？")) || 1;
-  for(let i=0; i<count; i++){
-    players.push({ id:i, name: prompt((i+1)+"人目の名前")||"部員"+(i+1), pos: 0, money: 0, goal: false, color: `hsl(${i*(360/count)}, 70%, 50%)`, streak: 0, awakened: false, penalty: 0 });
-  }
-  document.getElementById("overlay").style.display = "flex";
-  renderBoard(); updateStatus();
+  setTimeout(() => {
+    let count = parseInt(prompt("部員は何人？")) || 1;
+    for(let i=0; i<count; i++){
+      players.push({ id:i, name: prompt((i+1)+"人目の名前")||"部員"+(i+1), pos: 0, money: 0, goal: false, color: `hsl(${i*(360/count)}, 70%, 50%)`, streak: 0, awakened: false, penalty: 0 });
+    }
+    document.getElementById("turns-left").innerText = collectionInterval;
+    document.getElementById("rule-overlay").style.display = "flex";
+    renderBoard(); updateStatus();
+  }, 300);
 };
 
-function closeRuleAndStart() { document.getElementById("overlay").style.display = "none"; }
+function closeRule() { document.getElementById("rule-overlay").style.display = "none"; }
 
 function renderBoard() {
   const b = document.getElementById("board"); b.innerHTML = "";
@@ -128,137 +122,10 @@ function renderBoard() {
   });
   players.forEach(p => {
     const t = document.createElement("div"); t.className = "token"; t.style.background = p.color;
-    if(p.awakened) t.style.boxShadow = "0 0 10px yellow";
+    if(p.awakened) t.style.boxShadow = "0 0 15px gold";
     document.getElementById(`p-at-${p.pos}`).appendChild(t);
   });
 }
 
 function updateStatus() {
-  document.getElementById("statusArea").innerHTML = players.map((p, i) => `
-    <div class="money-card ${i===turn?'active-p':''} ${p.awakened?'is-awakened':''}" style="${p.goal?'opacity:0.4':''}">
-      <b style="color:${p.color}">● ${p.name}</b><br>💰 <b>${p.money}</b>円
-      ${p.awakened ? '<span class="status-badge" style="background:var(--gold)">⚡️ 覚醒中</span>' : ''}
-      ${p.penalty > 0 ? '<span class="status-badge" style="background:#888; color:white;">🧶 球拾い中</span>' : ''}
-    </div>`).join("");
-}
-
-function rollDice() {
-  if(isMoving || players[turn].goal) return;
-  if(players[turn].penalty > 0) {
-    players[turn].penalty--; showSimpleEvent(players[turn], "球拾い中", "忙しくて動けない！(あと"+players[turn].penalty+"回休み)"); return;
-  }
-  isMoving = true; document.getElementById("diceBtn").disabled = true;
-  let dice = 0; let cnt = 0;
-  const timer = setInterval(() => {
-    dice = players[turn].awakened ? Math.floor(Math.random() * 3) + 4 : Math.floor(Math.random() * 6) + 1;
-    document.getElementById("diceNum").innerText = "🎲 " + dice;
-    if(cnt++ > 10) { clearInterval(timer); move(dice); }
-  }, 60);
-}
-
-function move(steps) {
-  let p = players[turn];
-  p.pos = Math.min(squares.length - 1, p.pos + steps);
-  if(p.pos === squares.length - 1) p.goal = true;
-  renderBoard();
-  showEventOverlay(p, squares[p.pos]);
-}
-
-function showEventOverlay(p, s) {
-  const overlay = document.getElementById("event-overlay");
-  const evCard = document.getElementById("ev-card");
-  const evP = document.getElementById("ev-player");
-  const evT = document.getElementById("ev-text");
-  const evM = document.getElementById("ev-money");
-  const evClose = document.getElementById("ev-close");
-  const evInst = document.getElementById("ev-instruction");
-
-  evP.innerText = `【 ${p.name} 】`;
-  evP.style.color = p.color;
-  evT.innerText = s.txt;
-  evM.innerText = "";
-  evInst.style.display = "none";
-  evClose.style.display = "none";
-  evCard.className = "event-card";
-  if(p.awakened) evCard.classList.add("awakened-card");
-  overlay.style.display = "flex";
-
-  let moneyChange = s.m || 0;
-  let isPositive = moneyChange > 0;
-
-  if(s.t === "mini") {
-    evCard.classList.add("mini-game-card");
-    evM.innerText = "🔥 現実で対決しよう！";
-    evInst.style.display = "block";
-    evClose.style.display = "inline-block"; // ボタンを押すまで待機
-  } else if(s.t === "reward") {
-    const totalWeight = rewards.reduce((sum, r) => sum + r.w, 0);
-    let random = Math.random() * totalWeight;
-    let final;
-    for (const r of rewards) { if (random < r.w) { final = r; break; } random -= r.w; }
-    p.money += final.v;
-    evT.innerText = "ご褒美！";
-    evM.innerText = final.n;
-    isPositive = true;
-    setTimeout(closeEvent, 2500);
-  } else if(s.t === "warp") {
-    const jump = Math.floor(Math.random()*3)+1; const fwd = Math.random()>0.5;
-    p.pos = fwd ? Math.min(squares.length-1, p.pos+jump) : Math.max(0, p.pos-jump);
-    evM.innerText = fwd ? `${jump}マス進む！🚀` : `${jump}マス戻る...🌀`;
-    renderBoard();
-    setTimeout(closeEvent, 2500);
-  } else if(s.special === "doubles") {
-    let partner; do { partner = players[Math.floor(Math.random()*players.length)]; } while(partner === p);
-    if(Math.random() > 0.5) { 
-      p.money += 5000; partner.money += 5000; evT.innerText = "ダブルス勝利！"; evM.innerText = `${partner.name}と+5000円！`; isPositive = true;
-    } else { 
-      p.money -= 2000; partner.money -= 2000; evT.innerText = "ダブルス敗北..."; evM.innerText = `${partner.name}と-2000円`; isPositive = false;
-    }
-    setTimeout(closeEvent, 2500);
-  } else {
-    p.money += moneyChange;
-    evM.innerText = moneyChange !== 0 ? (moneyChange > 0 ? `+${moneyChange}円` : `${moneyChange}円`) : "特になし";
-    setTimeout(closeEvent, 2500);
-  }
-
-  // 覚醒・ペナルティ判定
-  if(isPositive) { p.streak++; if(p.streak >= 2) p.awakened = true; } 
-  else if(moneyChange < 0) { 
-    p.streak--; if(p.streak <= -2) { p.penalty = 1; p.streak = 0; }
-    p.awakened = false; 
-  }
-}
-
-function showSimpleEvent(p, title, text) {
-  const overlay = document.getElementById("event-overlay");
-  document.getElementById("ev-player").innerText = p.name;
-  document.getElementById("ev-text").innerText = title;
-  document.getElementById("ev-money").innerText = text;
-  document.getElementById("ev-close").style.display = "none";
-  overlay.style.display = "flex";
-  setTimeout(closeEvent, 2500);
-}
-
-function closeEvent() {
-  document.getElementById("event-overlay").style.display = "none";
-  finishTurn();
-}
-
-function finishTurn() {
-  globalTurnCount++; updateStatus();
-  if(globalTurnCount % (players.length * 2) === 0) {
-    const lowP = [...players].sort((a,b)=>a.money-b.money)[0];
-    players.forEach(pl => { if(pl !== lowP && !pl.goal) pl.money -= 3000; });
-    alert("【緊急】部費徴収！最下位の"+lowP.name+"以外-3000円！");
-    updateStatus();
-  }
-  if(players.every(pl => pl.goal)) {
-    alert("優勝は " + [...players].sort((a,b)=>b.money-a.money)[0].name + "！");
-  } else {
-    do { turn = (turn + 1) % players.length; } while(players[turn].goal);
-    isMoving = false; document.getElementById("diceBtn").disabled = false;
-  }
-}
-</script>
-</body>
-</html>
+  document
