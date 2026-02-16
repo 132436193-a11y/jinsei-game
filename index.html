@@ -2,9 +2,18 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>部活人生ゲーム：テニス編</title>
+<title>超・テニス部人生ゲーム</title>
 <style>
   body { background: #eef2f3; font-family: sans-serif; text-align: center; margin: 0; padding: 20px; }
+  
+  /* 部内の雰囲気エリア */
+  #moodArea { 
+    background: #333; color: #fff; padding: 10px; border-radius: 10px; 
+    max-width: 400px; margin: 0 auto 10px; font-weight: bold;
+  }
+  .mood-bar { height: 10px; background: #555; border-radius: 5px; margin-top: 5px; overflow: hidden; }
+  #moodFill { height: 100%; width: 50%; background: #ff4757; transition: 0.5s; }
+
   #board { display: grid; grid-template-columns: repeat(7, 120px); gap: 10px; justify-content: center; margin: 20px auto; }
   .square { 
     border: 3px solid white; height: 120px; background: #2e8b57; color: white; 
@@ -17,48 +26,46 @@
   .type-mini   { background: #e74c3c !important; }
   .type-warp   { background: #3498db !important; }
 
-  .square-num { font-size: 14px; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.3); margin-bottom: 5px; }
-  .square-price { font-size: 11px; background: rgba(0,0,0,0.3); border-radius: 3px; margin-top: 5px; color: white;}
-
-  #diceArea { margin: 20px; }
   #diceBtn { padding: 15px 30px; font-size: 20px; cursor: pointer; border-radius: 50px; background: #2e8b57; color: white; border: none; box-shadow: 0 4px #1e5d3a; }
   #diceBtn:disabled { background: #ccc; box-shadow: none; }
   
-  #eventLog { background: #fffbe6; padding: 15px; border-radius: 10px; max-width: 600px; margin: 10px auto; font-weight: bold; border-left: 5px solid #f1c40f; min-height: 24px; }
-  .token { width: 18px; height: 18px; border-radius: 50%; border: 2px solid white; display: inline-block; margin: 2px; }
-  .money-card { display: inline-block; padding: 10px; margin: 5px; background: white; border-radius: 5px; border: 2px solid #ccc; width: 100px; }
-  .active-p { border-color: #2e8b57; background: #e8f5e9; transform: scale(1.1); }
+  #eventLog { background: #fffbe6; padding: 15px; border-radius: 10px; max-width: 650px; margin: 10px auto; font-weight: bold; border-left: 5px solid #f1c40f; min-height: 50px; line-height: 1.4; display: flex; align-items: center; justify-content: center; }
+  
+  .money-card { display: inline-block; padding: 10px; margin: 5px; background: white; border-radius: 5px; border: 2px solid #ccc; width: 120px; vertical-align: top; }
+  .active-p { border-color: #2e8b57; background: #e8f5e9; transform: scale(1.1); z-index: 10; position: relative; }
+  .skill-badge { font-size: 10px; background: #ff4757; color: white; padding: 2px 4px; border-radius: 3px; display: block; margin-top: 5px; }
 
-  /* ルーレット用モーダル */
+  .token { width: 18px; height: 18px; border-radius: 50%; border: 2px solid white; display: inline-block; margin: 2px; }
+
   #rewardModal {
     display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center;
   }
-  #rouletteBox {
-    background: white; padding: 40px; border-radius: 20px; text-align: center;
-    border: 5px solid #f1c40f; width: 320px;
-  }
-  #rouletteText { font-size: 26px; font-weight: bold; margin: 20px 0; color: #e67e22; min-height: 60px; display: flex; align-items: center; justify-content: center; }
+  #rouletteBox { background: white; padding: 30px; border-radius: 20px; text-align: center; border: 5px solid #f1c40f; width: 320px; }
 </style>
 </head>
 <body>
 
-<h1>🎾 部活人生ゲーム</h1>
+<div id="moodArea">
+  🎾 部内の熱血度: <span id="moodText">普通</span>
+  <div class="mood-bar"><div id="moodFill"></div></div>
+</div>
+
+<h1>🎾 部活人生ゲーム：レジェンド</h1>
 
 <div id="diceArea">
-  <div id="diceNum" style="font-size: 40px; font-weight: bold; margin-bottom: 10px;">🎲 ?</div>
+  <div id="diceNum" style="font-size: 40px; font-weight: bold; margin-bottom: 5px;">🎲 ?</div>
   <button id="diceBtn" onclick="rollDice()">サイコロを振る！</button>
 </div>
 
-<div id="eventLog">準備中...</div>
+<div id="eventLog">部員を登録してください</div>
 <div id="board"></div>
 <div id="statusArea"></div>
 
 <div id="rewardModal">
   <div id="rouletteBox">
-    <h2 style="margin:0">🎁 ご褒美抽選 🎁</h2>
-    <div id="rouletteText">???</div>
-    <div style="font-size:12px; color:#666;">止まったものがもらえるよ！</div>
+    <h2 id="modalTitle">🎁 ご褒美抽選 🎁</h2>
+    <div id="rouletteText" style="font-size:24px; font-weight:bold; margin:20px 0;">???</div>
   </div>
 </div>
 
@@ -71,7 +78,7 @@ const squares = [
   {t:"normal", txt:"大会出場決定", m:5000},
   {t:"mini", txt:"現実ミニゲーム", m:0},
   {t:"warp", txt:"ワープ！", m:0},
-  {t:"normal", txt:"試合に勝利！", m:3000},
+  {t:"normal", txt:"ダブルス練習", m:0, special:"doubles"},
   {t:"normal", txt:"練習試合敗北", m:-2000},
   {t:"reward", txt:"ドリンクタイム", m:0},
   {t:"normal", txt:"雨でオフ", m:0},
@@ -80,7 +87,7 @@ const squares = [
   {t:"warp", txt:"ワープ！", m:0},
   {t:"normal", txt:"フォーム迷走", m:-1000},
   {t:"reward", txt:"臨時ボーナス", m:0},
-  {t:"normal", txt:"ミスで発狂", m:-1000},
+  {t:"normal", txt:"ダブルス大会", m:0, special:"doubles"},
   {t:"mini", txt:"現実ミニゲーム", m:0},
   {t:"normal", txt:"スコアプラス", m:2000},
   {t:"warp", txt:"ワープ！", m:0},
@@ -98,27 +105,38 @@ const squares = [
   {t:"goal", txt:"引退試合！", m:0}
 ];
 
-// ご褒美ルーレットの内容
+const skills = [
+  {n:"無限の体力", d:"1回だけ進む距離2倍", used:false},
+  {n:"顧問のお気に入り", d:"マイナスが半分になる", used:false},
+  {n:"逆転のボレー", d:"最下位なら＋2000", used:false},
+  {n:"晴れ男/女", d:"雨マスの影響無視", used:false}
+];
+
 const rewardList = [
-  {n:"お金 +3000円", v:3000, type:"money"},
-  {n:"お金 +20000円", v:20000, type:"money"},
-  {n:"お金 +5000円", v:5000, type:"money"},
-  {n:"🧃 ジュース現物支給", v:0, type:"item"},
-  {n:"🍪 お菓子現物支給", v:0, type:"item"}
+  {n:"お金 +3000円", v:3000},
+  {n:"お金 +20000円", v:20000},
+  {n:"お金 +5000円", v:5000},
+  {n:"🧃 ジュース現物", v:0},
+  {n:"🍪 お菓子現物", v:0}
 ];
 
 let players = [];
 let turn = 0;
 let isMoving = false;
+let mood = 50; // 0-100
 
 function init() {
   let count = parseInt(prompt("部員は何人？(1-14)")) || 1;
   for(let i=0; i<Math.min(count, 14); i++){
-    players.push({ id:i, name: prompt((i+1)+"人目の名前")||"部員"+(i+1), pos: 0, money: 0, goal: false, color: `hsl(${i*(360/count)}, 70%, 50%)` });
+    let skill = skills[Math.floor(Math.random()*skills.length)];
+    players.push({ 
+        id:i, name: prompt((i+1)+"人目の名前")||"部員"+(i+1), 
+        pos: 0, money: 0, goal: false, color: `hsl(${i*(360/count)}, 70%, 50%)`,
+        skill: {...skill}, stats: {lost:0, mini:0, rewards:0}
+    });
   }
   renderBoard();
   updateStatus();
-  document.getElementById("eventLog").innerText = "試合開始！" + players[0].name + "の番です。";
 }
 
 function renderBoard() {
@@ -127,9 +145,9 @@ function renderBoard() {
   squares.forEach((s, i) => {
     const div = document.createElement("div");
     div.className = `square type-${s.t}`;
-    div.innerHTML = `<div class="square-num">${i}</div><div style="font-weight:bold">${s.txt}</div>`;
-    if(s.t === "reward") div.innerHTML += `<div class="square-price">🎁 止まると抽選！</div>`;
-    else if(s.m !== 0) div.innerHTML += `<div class="square-price">${s.m > 0 ? '+':''}${s.m}円</div>`;
+    div.innerHTML = `<div class="square-num">${i}</div><b>${s.txt}</b>`;
+    if(s.t === "reward") div.innerHTML += `<div style="font-size:10px">🎁 抽選</div>`;
+    else if(s.m !== 0) div.innerHTML += `<div style="font-size:10px">${s.m > 0 ? '+':''}${s.m}</div>`;
     div.innerHTML += `<div id="p-at-${i}"></div>`;
     b.appendChild(div);
   });
@@ -147,8 +165,17 @@ function updateStatus() {
   s.innerHTML = players.map((p, i) => `
     <div class="money-card ${i===turn ? 'active-p':''}">
       <b style="color:${p.color}">● ${p.name}</b><br>💰 ${p.money}円
+      <span class="skill-badge">${p.skill.n}</span>
     </div>
   `).join("");
+  
+  // 熱血度の更新
+  const fill = document.getElementById("moodFill");
+  const txt = document.getElementById("moodText");
+  fill.style.width = mood + "%";
+  if(mood > 80) { txt.innerText = "熱血モード (全員+500円ボーナス中)"; fill.style.background = "#ff4757"; }
+  else if(mood < 30) { txt.innerText = "サボりモード (やる気なし)"; fill.style.background = "#747d8c"; }
+  else { txt.innerText = "普通"; fill.style.background = "#2ed573"; }
 }
 
 function rollDice() {
@@ -161,8 +188,14 @@ function rollDice() {
   const timer = setInterval(() => {
     dice = Math.floor(Math.random() * 6) + 1;
     document.getElementById("diceNum").innerText = "🎲 " + dice;
-    if(count++ > 12) {
+    if(count++ > 10) {
       clearInterval(timer);
+      
+      // スキル：無限の体力
+      if(players[turn].skill.n === "無限の体力" && !players[turn].skill.used && confirm("スキル【無限の体力】を使って移動距離を2倍にしますか？")){
+          dice *= 2;
+          players[turn].skill.used = true;
+      }
       move(dice);
     }
   }, 60);
@@ -170,27 +203,60 @@ function rollDice() {
 
 function move(steps) {
   let p = players[turn];
-  p.pos += steps;
-  if(p.pos >= squares.length - 1) {
-    p.pos = squares.length - 1;
-    p.goal = true;
-  }
+  p.pos = Math.min(squares.length - 1, p.pos + steps);
+  if(p.pos === squares.length - 1) p.goal = true;
   
   renderBoard();
   const s = squares[p.pos];
-  document.getElementById("eventLog").innerText = `${p.name}は「${s.txt}」に止まった！`;
+  let log = `${p.name}：「${s.txt}」！`;
+
+  // 熱血度ボーナス
+  if(mood > 80 && !p.goal) { p.money += 500; log += " (熱血ボーナス+500)"; }
 
   setTimeout(() => {
-    if(s.t === "reward") {
-      startRewardRoulette(p);
-    } else {
-      p.money += s.m;
-      if(s.t === "warp") {
-        p.pos = Math.max(0, p.pos + (Math.random()>0.5 ? 2 : -2));
+    if(s.special === "doubles") {
+        let partner;
+        do { partner = players[Math.floor(Math.random()*players.length)]; } while(partner === p);
+        const win = Math.random() > 0.5;
+        if(win) {
+            p.money += 5000; partner.money += 5000;
+            log = `ダブルスイベント！${partner.name}と組んで勝利！二人とも+5000円！`;
+            mood += 10;
+        } else {
+            p.money -= 2000; partner.money -= 2000;
+            log = `ダブルスイベント...${partner.name}と息が合わず敗北。二人とも-2000円。`;
+            mood -= 10;
+        }
+        document.getElementById("eventLog").innerText = log;
+        updateStatus();
+        setTimeout(finishTurn, 2000);
+    } else if(s.t === "reward") {
+        p.stats.rewards++;
+        mood += 5;
+        startRewardRoulette(p);
+    } else if(s.t === "warp") {
+        const jump = Math.floor(Math.random()*3)+1;
+        const fwd = Math.random() > 0.5;
+        p.pos = fwd ? Math.min(squares.length-1, p.pos+jump) : Math.max(0, p.pos-jump);
+        document.getElementById("eventLog").innerText = fwd ? `ワープ！${jump}進む` : `ワープ！${jump}戻る`;
         renderBoard();
-      }
-      finishTurn();
+        setTimeout(finishTurn, 1000);
+    } else {
+        let m = s.m;
+        // スキル：顧問のお気に入り
+        if(m < 0 && p.skill.n === "顧問のお気に入り") m = Math.floor(m/2);
+        // スキル：晴れ男
+        if(s.txt === "雨でオフ" && p.skill.n === "晴れ男/女") { log += " だがスキルで練習強行！+1000円"; m = 1000; }
+        
+        if(m < 0) { p.stats.lost += Math.abs(m); mood -= 2; }
+        if(m > 0) mood += 2;
+        if(s.t === "mini") p.stats.mini++;
+        
+        p.money += m;
+        document.getElementById("eventLog").innerText = log;
+        finishTurn();
     }
+    mood = Math.max(0, Math.min(100, mood));
   }, 800);
 }
 
@@ -198,23 +264,14 @@ function startRewardRoulette(p) {
   const modal = document.getElementById("rewardModal");
   const text = document.getElementById("rouletteText");
   modal.style.display = "flex";
-
   let count = 0;
-  let finalReward;
   const timer = setInterval(() => {
-    finalReward = rewardList[Math.floor(Math.random() * rewardList.length)];
-    text.innerText = finalReward.n;
-    count++;
-    if(count > 20) {
+    let res = rewardList[Math.floor(Math.random()*rewardList.length)];
+    text.innerText = res.n;
+    if(count++ > 15) {
       clearInterval(timer);
-      // 当選決定
-      text.innerHTML = `<span style="color:#e74c3c; font-size: 28px;">★${finalReward.n}★</span>`;
-      p.money += finalReward.v;
-      
-      setTimeout(() => {
-        modal.style.display = "none";
-        finishTurn();
-      }, 2500);
+      p.money += res.v;
+      setTimeout(() => { modal.style.display="none"; finishTurn(); }, 1500);
     }
   }, 100);
 }
@@ -222,16 +279,26 @@ function startRewardRoulette(p) {
 function finishTurn() {
   updateStatus();
   if(players.every(pl => pl.goal)) {
-    let ranking = [...players].sort((a,b) => b.money - a.money);
-    let resultStr = ranking.map((p,i) => `${i+1}位: ${p.name} (${p.money}円)`).join("\n");
-    alert("全員引退しました！\n\n【最終結果】\n" + resultStr);
+    showFinalResult();
   } else {
     do { turn = (turn + 1) % players.length; } while(players[turn].goal);
     isMoving = false;
     document.getElementById("diceBtn").disabled = false;
-    document.getElementById("eventLog").innerText = "次は " + players[turn].name + " の番です。";
-    updateStatus();
   }
+}
+
+function showFinalResult() {
+    let ranking = [...players].sort((a,b) => b.money - a.money);
+    let msg = "🏆 最終結果発表 🏆\n\n";
+    ranking.forEach((p,i) => {
+        let title = "期待の新人";
+        if(p === ranking[0]) title = "テニス界の至宝";
+        if(p.stats.lost > 30000) title = "ラケット破壊神";
+        if(p.stats.mini > 3) title = "ミニゲームの鬼";
+        if(p.stats.rewards > 3) title = "OBキラー";
+        msg += `${i+1}位：${p.name} (${p.money}円) 【称号：${title}】\n`;
+    });
+    alert(msg);
 }
 
 init();
