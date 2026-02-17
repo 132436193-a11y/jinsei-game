@@ -7,16 +7,20 @@
   :root { --green: #2e8b57; --gold: #ffd700; --red: #e74c3c; --dark: #1a1a1a; --rain: #4682b4; --wind: #f0e68c; }
   body { margin: 0; overflow: hidden; font-family: sans-serif; background: var(--dark); color: #333; transition: background 1s; }
   .main-container { display: flex; height: 100vh; padding: 10px; box-sizing: border-box; gap: 10px; }
+  
+  /* ルール説明の初期オーバーレイ */
+  #start-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 20000; display: flex; justify-content: center; align-items: center; }
+  #start-card { background: white; padding: 40px; border-radius: 30px; border: 10px solid var(--green); max-width: 800px; text-align: center; }
+  #start-card h1 { font-size: 48px; color: var(--green); margin-top: 0; }
+  #start-card ul { text-align: left; font-size: 24px; line-height: 1.8; margin: 30px 0; }
+  #start-card button { font-size: 32px; padding: 20px 60px; }
+
   #sidebar { flex: 0 0 260px; background: rgba(255,255,255,0.9); border-radius: 15px; padding: 10px; display: flex; flex-direction: column; }
   #statusArea { overflow-y: auto; flex-grow: 1; }
   .money-card { padding: 10px; border-radius: 10px; background: #fff; border: 3px solid #ddd; margin-bottom: 8px; transition: 0.3s; position: relative; }
   .active-p { border-color: #ffde59; transform: scale(1.05); left: 10px; box-shadow: 0 0 15px rgba(255,222,89,0.8); }
   .active-p::before { content: "🎾"; position: absolute; left: -20px; top: 35%; font-size: 18px; }
   
-  /* ルール説明エリア */
-  #rule-box { margin-top: 10px; padding: 10px; background: #eee; border-radius: 10px; font-size: 11px; line-height: 1.4; }
-  #rule-box h4 { margin: 0 0 5px 0; color: var(--green); border-bottom: 1px solid #ccc; }
-
   #game-area { flex: 1; display: flex; flex-direction: column; gap: 10px; }
   #top-bar { background: white; padding: 10px; border-radius: 15px; display: flex; justify-content: space-around; align-items: center; position: relative; }
   #board { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; flex-grow: 1; }
@@ -33,6 +37,20 @@
 </style>
 </head>
 <body id="bg-body">
+
+<div id="start-overlay">
+  <div id="start-card">
+    <h1>🎾 テニス部人生ゲーム 🎾</h1>
+    <ul>
+      <li>💰 <b>部費徴収:</b> 10ターン毎に全員(最下位以外)から徴収</li>
+      <li>🌤 <b>天気変化:</b> 3ターン毎に「豪雨」や「追い風」が到来</li>
+      <li>👿 <b>闇のショップ:</b> 所持金マイナスで契約可能。ただし…</li>
+      <li>💥 <b>下剋上:</b> 最下位は1度だけ1位と場所交代勝負ができる</li>
+      <li>🔥 <b>★マス:</b> 止まったら「現実」で対決！</li>
+    </ul>
+    <button onclick="startGame()">部活を始める（START）</button>
+  </div>
+</div>
 
 <div id="big-alert"></div>
 
@@ -60,16 +78,7 @@
   <div id="sidebar">
     <h3 style="text-align:center; margin:5px 0;">部員名簿</h3>
     <div id="statusArea"></div>
-    <button id="revolt-btn" onclick="triggerRevolt()" style="width:100%; margin-top:5px; font-size:14px; background:#e67e22; border:none; color:white; padding:10px; border-radius:5px; display:none; cursor:pointer;">💥 異議申し立て(下剋上)</button>
-    
-    <div id="rule-box">
-      <h4>📖 ルール説明</h4>
-      ・10ターン毎に<b>部費徴収</b>(最下位以外-3000)<br>
-      ・3ターン毎に<b>天気が変化</b>(豪雨/追い風)<br>
-      ・<b>所持金マイナス</b>で闇のショップ契約可<br>
-      ・<b>最下位</b>は1度だけ1位に場所交代を挑める<br>
-      ・★マスは<b>現実で対決</b>して勝敗を決める
-    </div>
+    <button id="revolt-btn" onclick="triggerRevolt()" style="width:100%; margin-top:5px; font-size:14px; background:#e67e22; border:none; color:white; padding:10px; border-radius:5px; display:none; cursor:pointer;">💥 審判に異議申し立て</button>
   </div>
   
   <div id="game-area">
@@ -98,13 +107,14 @@ const rewards = ["+5000円", "+20000円", "🧃 ジュース", "🍪 お菓子"]
 let players = [], turn = 0, isMoving = false, globalTurnCount = 0, rouletteTimer = null;
 let currentWeather = "sunny"; 
 
-window.onload = function() {
+function startGame() {
   const count = parseInt(prompt("部員は何人？")) || 2;
   for(let i=0; i<count; i++){
     players.push({ id:i, name: prompt((i+1)+"人目の名前")||"部員"+(i+1), pos: 0, money: 0, goal: false, color: `hsl(${i*(360/count)}, 70%, 50%)`, darkContract: false, hasRevolted: false });
   }
+  document.getElementById("start-overlay").style.display = "none";
   renderBoard(); updateStatus();
-};
+}
 
 function renderBoard() {
   const b = document.getElementById("board"); b.innerHTML = "";
