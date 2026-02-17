@@ -25,9 +25,13 @@
   .rank-item { opacity: 0; transform: translateY(20px); transition: 0.8s; margin: 10px 0; background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; display: flex; justify-content: space-between; width: 80%; }
   .rank-show { opacity: 1; transform: translateY(0); }
   .weather-badge { padding: 5px 15px; border-radius: 20px; font-weight: bold; color: white; }
+  /* 天気テロップ用 */
+  #weather-alert { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 80px; font-weight: bold; color: white; text-shadow: 0 0 30px rgba(0,0,0,1); z-index: 10000; pointer-events: none; display: none; white-space: nowrap; }
 </style>
 </head>
 <body id="bg-body">
+
+<div id="weather-alert"></div>
 
 <div id="event-overlay" class="full-overlay">
   <div id="ev-card" class="event-card">
@@ -79,7 +83,7 @@ const squares = [
 ];
 const rewards = ["+5000円", "+20000円", "🧃 ジュース", "🍪 お菓子"];
 let players = [], turn = 0, isMoving = false, globalTurnCount = 0, rouletteTimer = null;
-let currentWeather = "sunny"; // sunny, rainy, windy
+let currentWeather = "sunny"; 
 
 window.onload = function() {
   const count = parseInt(prompt("部員は何人？")) || 2;
@@ -101,15 +105,12 @@ function renderBoard() {
 }
 
 function updateStatus() {
-  const sorted = [...players].sort((a,b)=>a.money-b.money);
+  const sorted = [...players].filter(p => !p.goal).sort((a,b)=>a.money-b.money);
   const lowestPlayer = sorted[0];
-  
   document.getElementById("statusArea").innerHTML = players.map((p, i) => `
     <div class="money-card ${i===turn?'active-p':''}">
       <b style="color:${p.color}">${p.name}</b><br>💰 <b>${p.money}</b>円 ${p.darkContract?'<br><small style="color:purple">⚠️契約中</small>':''}
     </div>`).join("");
-
-  // 最下位かつ未実行なら下剋上ボタンを表示
   const revoltBtn = document.getElementById("revolt-btn");
   if (players[turn] === lowestPlayer && !players[turn].hasRevolted && !players[turn].goal) {
     revoltBtn.style.display = "block";
@@ -122,45 +123,27 @@ function updateWeather() {
   const rand = Math.random();
   const bg = document.getElementById("bg-body");
   const badge = document.getElementById("weather-display");
-  if (rand < 0.6) {
-    currentWeather = "sunny";
-    bg.style.background = "#1a1a1a";
-    badge.innerText = "☀️ 晴れ"; badge.style.background = "var(--green)";
-  } else if (rand < 0.8) {
-    currentWeather = "rainy";
-    bg.style.background = "#001f3f";
-    badge.innerText = "☔ 豪雨"; badge.style.background = "var(--rain)";
-    alert("☔ 豪雨！ダイスの目が半分（端数切り上げ）になります！");
-  } else {
-    currentWeather = "windy";
-    bg.style.background = "#3d3d00";
-    badge.innerText = "🍃 追い風"; badge.style.background = "var(--wind)";
-    badge.style.color = "#333";
-    alert("🍃 追い風！全員＋2マス進みます！");
-  }
-}
+  const alertBox = document.getElementById("weather-alert");
+  let weatherText = "";
 
-function triggerRevolt() {
-  const p = players[turn];
-  const sorted = [...players].sort((a,b)=>b.money-a.money);
-  const target = sorted[0]; // 1位
-  if (p === target) return;
-  
-  p.hasRevolted = true;
-  alert(`💥 下剋上！1位の ${target.name} と場所を賭けてダイス勝負！`);
-  const myRoll = Math.floor(Math.random() * 6) + 1;
-  const targetRoll = Math.floor(Math.random() * 6) + 1;
-  alert(`${p.name}: ${myRoll} VS ${target.name}: ${targetRoll}`);
-  
-  if (myRoll > targetRoll) {
-    alert("勝利！場所を入れ替えます！");
-    const tempPos = p.pos; p.pos = target.pos; target.pos = tempPos;
-    renderBoard();
+  if (rand < 0.6) {
+    currentWeather = "sunny"; bg.style.background = "#1a1a1a";
+    badge.innerText = "☀️ 晴れ"; badge.style.background = "var(--green)"; badge.style.color = "white";
+    weatherText = "☀️ 晴天";
+  } else if (rand < 0.8) {
+    currentWeather = "rainy"; bg.style.background = "#001f3f";
+    badge.innerText = "☔ 豪雨"; badge.style.background = "var(--rain)"; badge.style.color = "white";
+    weatherText = "☔ 豪雨 (ダイス半減)";
   } else {
-    alert("失敗... 審判に怒られて罰金2000円");
-    p.money -= 2000;
+    currentWeather = "windy"; bg.style.background = "#3d3d00";
+    badge.innerText = "🍃 追い風"; badge.style.background = "var(--wind)"; badge.style.color = "#333";
+    weatherText = "🍃 追い風 (+2マス)";
   }
-  updateStatus();
+
+  // デカデカと表示
+  alertBox.innerText = weatherText;
+  alertBox.style.display = "block";
+  setTimeout(() => { alertBox.style.display = "none"; }, 2500);
 }
 
 function checkDarkShop() {
@@ -169,24 +152,22 @@ function checkDarkShop() {
     document.getElementById("ev-card").classList.add("dark-shop");
     document.getElementById("ev-close").style.display = "none";
     document.getElementById("dark-options").style.display = "block";
-    showEvent(p, "👿 闇のラケットショップ", "金がねぇな...契約するか？", "#4b0082", false);
-    return;
+    showEvent(p, "👿 闇のラケットショップ", "契約するか？<br><small>効果：サイコロ2個。引退賞金半分。</small>", "#4b0082", false);
+  } else {
+    rollDice();
   }
-  rollDice();
 }
 
 function rollDice() {
   if(isMoving || players[turn].goal) return;
   isMoving = true;
+  document.getElementById("diceBtn").disabled = true;
   let dice1 = Math.floor(Math.random() * 6) + 1;
   let total = dice1 + (players[turn].darkContract ? Math.floor(Math.random() * 6) + 1 : 0);
-  
-  // 天気補正
   if (currentWeather === "rainy") total = Math.ceil(total / 2);
   if (currentWeather === "windy") total += 2;
-
   document.getElementById("diceNum").innerText = "🎲 " + total;
-  setTimeout(() => move(total), 500);
+  setTimeout(() => move(total), 600);
 }
 
 function move(steps) {
@@ -196,7 +177,8 @@ function move(steps) {
       p.goal = true;
       p.money += p.darkContract ? 15000 : 30000;
   }
-  renderBoard(); processSquare(p, squares[p.pos]);
+  renderBoard(); 
+  processSquare(p, squares[p.pos]);
 }
 
 function processSquare(p, s) {
@@ -210,6 +192,33 @@ function processSquare(p, s) {
     p.money += s.m || 0;
     showEvent(p, s.m >= 0 ? "👍 出来事" : "👎 事件", s.txt + (s.m ? `<br>${s.m}円` : ""), s.m >= 0 ? "#2e8b57" : "#e74c3c", true);
   }
+}
+
+function closeEvent() {
+  document.getElementById("event-overlay").style.display = "none";
+  document.getElementById("ev-card").classList.remove("dark-shop");
+  document.getElementById("dark-options").style.display = "none";
+  finishTurn();
+}
+
+function finishTurn() {
+  isMoving = false; 
+  document.getElementById("diceBtn").disabled = false;
+  globalTurnCount++;
+  document.getElementById("turns-left").innerText = 10 - (globalTurnCount % 10);
+  if(globalTurnCount % 3 === 0) updateWeather();
+  if(globalTurnCount % 10 === 0) alert("💰 部費徴収タイム！最下位以外-3000円！");
+  updateStatus();
+  if(players.every(pl => pl.goal)) showFinalResults();
+  else { do { turn = (turn + 1) % players.length; } while(players[turn].goal); updateStatus(); }
+}
+
+function showEvent(p, title, text, color, hasButton) {
+  document.getElementById("ev-player").innerText = p.name;
+  document.getElementById("ev-text").innerHTML = title;
+  document.getElementById("ev-money").innerHTML = text;
+  document.getElementById("event-overlay").style.display = "flex";
+  document.getElementById("ev-close").style.display = hasButton ? "inline-block" : "none";
 }
 
 function startRoulette(p) {
@@ -229,33 +238,31 @@ function stopRoulette() {
   document.getElementById("ev-close").style.display = "inline-block";
 }
 
-function showEvent(p, title, text, color, hasButton) {
-  document.getElementById("ev-player").innerText = p.name;
-  document.getElementById("ev-text").innerHTML = title;
-  document.getElementById("ev-money").innerHTML = text;
-  document.getElementById("event-overlay").style.display = "flex";
-  document.getElementById("ev-close").style.display = hasButton ? "inline-block" : "none";
-}
-
-function closeEvent() {
-  document.getElementById("ev-card").classList.remove("dark-shop");
+function acceptDarkContract() {
+  players[turn].darkContract = true;
   document.getElementById("dark-options").style.display = "none";
+  document.getElementById("ev-card").classList.remove("dark-shop");
   document.getElementById("event-overlay").style.display = "none";
-  finishTurn();
+  rollDice();
 }
 
-function finishTurn() {
-  isMoving = false; globalTurnCount++;
-  document.getElementById("turns-left").innerText = 10 - (globalTurnCount % 10);
-  
-  // 3ターンごとに天気変更
-  if(globalTurnCount % 3 === 0) updateWeather();
-  
-  if(globalTurnCount % 10 === 0) alert("💰 部費徴収！最下位以外-3000円！");
-  
+function triggerRevolt() {
+  const p = players[turn];
+  const sorted = [...players].sort((a,b)=>b.money-a.money);
+  const target = sorted[0];
+  p.hasRevolted = true;
+  alert(`💥 下剋上！1位の ${target.name} と場所を賭けて勝負！`);
+  const r1 = Math.floor(Math.random() * 6) + 1;
+  const r2 = Math.floor(Math.random() * 6) + 1;
+  alert(`${p.name}: ${r1} VS ${target.name}: ${r2}`);
+  if (r1 > r2) {
+    alert("勝利！場所を入れ替えます！");
+    let tPos = p.pos; p.pos = target.pos; target.pos = tPos;
+    renderBoard();
+  } else {
+    alert("失敗... 罰金2000円"); p.money -= 2000;
+  }
   updateStatus();
-  if(players.every(pl => pl.goal)) showFinalResults();
-  else { do { turn = (turn + 1) % players.length; } while(players[turn].goal); updateStatus(); }
 }
 
 function showFinalResults() {
@@ -266,17 +273,8 @@ function showFinalResults() {
     item.className = "rank-item";
     item.innerHTML = `<span>${i+1}位: ${p.name}</span><b>${p.money}円</b>`;
     document.getElementById("rank-list").appendChild(item);
-    setTimeout(() => { 
-      item.classList.add("rank-show");
-      if(i === 0) document.getElementById("restart-btn").style.display = "inline-block";
-    }, (sorted.length - i) * 1000);
+    setTimeout(() => { item.classList.add("rank-show"); if(i===0) document.getElementById("restart-btn").style.display="block"; }, (sorted.length - i) * 1000);
   });
-}
-
-function acceptDarkContract() {
-  players[turn].darkContract = true;
-  document.getElementById("event-overlay").style.display = "none";
-  rollDice();
 }
 </script>
 </body>
