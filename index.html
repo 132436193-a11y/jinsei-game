@@ -27,7 +27,6 @@
   button.big-btn:active { transform: translateY(3px); box-shadow: none; }
 
   #sidebar { flex: 0 0 280px; background: rgba(255,255,255,0.9); border-radius: 15px; padding: 10px; display: flex; flex-direction: column; }
-  /* スムーズスクロールを有効化 */
   #statusArea { overflow-y: auto; flex-grow: 1; scroll-behavior: smooth; }
   .money-card { padding: 10px; border-radius: 10px; background: #fff; border: 3px solid #ddd; margin-bottom: 8px; position: relative; }
   .active-p { border-color: #ffde59 !important; transform: scale(1.05); left: 10px; box-shadow: 0 0 15px rgba(255,222,89,0.8); background: #fffde0 !important; }
@@ -37,7 +36,10 @@
   .condition-badge { font-size: 10px; font-weight: bold; padding: 2px 5px; border-radius: 10px; margin-left: 5px; }
 
   #game-area { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+  /* 💡 天気表示エリアのスタイル調整 */
   #top-bar { background: white; padding: 10px; border-radius: 15px; display: flex; justify-content: space-around; align-items: center; }
+  #weather-display { padding: 10px 20px; border-radius: 20px; font-weight: bold; background: var(--green); color: white; font-size: 14px; }
+  
   #board { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; flex-grow: 1; }
   .square { background: var(--green); border: 1px solid white; border-radius: 6px; color: white; padding: 4px; font-size: 10px; }
   .type-reward { background: var(--gold) !important; color: #333 !important; }
@@ -49,7 +51,6 @@
   @keyframes dice-roll { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
   #revolt-overlay { background: rgba(200, 0, 0, 0.98); z-index: 30000; display: none; }
   .revolt-title { font-size: 60px; font-weight: bold; color: yellow; text-shadow: 4px 4px 0 #000; animation: shake 0.2s infinite; }
-  @keyframes shake { 0%, 100% { transform: rotate(-1deg); } 50% { transform: rotate(1deg); } }
 </style>
 </head>
 <body>
@@ -90,7 +91,7 @@
   </div>
   <div id="game-area">
     <div id="top-bar">
-      <div id="weather-display" style="padding:10px 20px; border-radius:20px; font-weight:bold; background:var(--green); color:white;">☀️ 晴れ</div>
+      <div id="weather-display">☀️ 晴れ</div>
       <div id="diceNum" style="font-size:40px; font-weight:bold; width:80px; text-align:center;">🎲</div>
       <button id="diceBtn" class="big-btn" style="padding:15px 40px;" onclick="checkDarkShop()">サイコロを振る</button>
       <div style="font-size:14px; background:var(--red); color:white; padding:10px; border-radius:10px;">徴収まで: <span id="turns-left" style="font-weight:bold;">10</span></div>
@@ -126,56 +127,27 @@ function inputPhase() {
 
 function showRuleBase() {
   document.getElementById("flow-title").innerText = "🎾 基本ルールについて";
-  document.getElementById("flow-content").innerHTML = `<p>
-    ・<b>最終順位：</b>引退時、一番多く「お金」を持っていた人が優勝です。<br>
-    ・<b>引退賞金：</b>ゴールするとお祝いとして<b>30,000円</b>もらえます。<br>
-    ・<b>定期徴収：</b>10ターンごとに部費集めがあります。最下位以外から<b>3,000円</b>を没収します。</p>
-    <button class="big-btn" onclick="showRulePyramid()">次へ：部内の格付け</button>`;
+  document.getElementById("flow-content").innerHTML = `<p>・<b>最終順位：</b>引退時、一番多く「お金」を持っていた人が優勝です。<br>・<b>引退賞金：</b>ゴールするとお祝いとして<b>30,000円</b>もらえます。<br>・<b>定期徴収：</b>10ターンごとに部費集めがあります。最下位以外から<b>3,000円</b>を没収します。</p><button class="big-btn" onclick="showRulePyramid()">次へ：部内の格付け</button>`;
 }
 
 function showRulePyramid() {
   document.getElementById("flow-title").innerText = "📊 所持金による「格付け」";
-  document.getElementById("flow-content").innerHTML = `
-    <p>所持金に応じて、あなたの称号がリアルタイムで変化します。</p>
-    <div class="pyramid-container">
-      <div class="p-row p-1">5万円～：レジェンド</div>
-      <div class="p-row p-2">3万円～：エース</div>
-      <div class="p-row p-3">1万円～：レギュラー</div>
-      <div class="p-row p-4">0円～：平部員</div>
-      <div class="p-row p-5">-1万円～：雑用係</div>
-      <div class="p-row p-6">それ以下：部の恥</div>
-    </div>
-    <button class="big-btn" onclick="showRuleTrait()">次へ：プレイヤーの特性</button>`;
+  document.getElementById("flow-content").innerHTML = `<p>所持金に応じて、あなたの称号がリアルタイムで変化します。</p><div class="pyramid-container"><div class="p-row p-1">5万円～：レジェンド</div><div class="p-row p-2">3万円～：エース</div><div class="p-row p-3">1万円～：レギュラー</div><div class="p-row p-4">0円～：平部員</div><div class="p-row p-5">-1万円～：雑用係</div><div class="p-row p-6">それ以下：部の恥</div></div><button class="big-btn" onclick="showRuleTrait()">次へ：プレイヤーの特性</button>`;
 }
 
 function showRuleTrait() {
   document.getElementById("flow-title").innerText = "✨ プレイヤーの特性と新要素";
-  document.getElementById("flow-content").innerHTML = `<p>
-    ・<b>顧問の愛弟子：</b>部費徴収を毎回免除されます。<br>
-    ・<b>晴れ男/女：</b>「豪雨」でも、足止めされずに進めます。<br>
-    ・<b>追い風マスター：</b>「追い風」の時、誰よりも多く進めます。<br>
-    ・<b>逆境に強い雑草魂：</b>マイナスイベントの損失が半分になり、逆に少しお金をもらえます！<br><br>
-    <b>【追加要素】</b><br>
-    ・<b>コンディション：</b>5ターンごとに「絶好調」や「スランプ」に変化します。<br>
-    ・<b>ダブルス：</b>対決マスで近くに部員がいれば協力ボーナスが入ります！</p>
-    <button class="big-btn" onclick="showRuleDark()">次へ：闇取引について</button>`;
+  document.getElementById("flow-content").innerHTML = `<p>・<b>顧問の愛弟子：</b>部費徴収を毎回免除されます。<br>・<b>晴れ男/女：</b>「豪雨」でも、足止めされずに進めます。<br>・<b>追い風マスター：</b>「追い風」の時、誰よりも多く進めます。<br>・<b>逆境に強い雑草魂：</b>マイナスイベントの損失が半分になり、逆に少しお金をもらえます！<br><br><b>【追加要素】</b><br>・<b>コンディション：</b>5ターンごとに「絶好調」や「スランプ」に変化します。<br>・<b>ダブルス：</b>対決マスで近くに部員がいれば協力ボーナスが入ります！</p><button class="big-btn" onclick="showRuleDark()">次へ：闇取引について</button>`;
 }
 
 function showRuleDark() {
   document.getElementById("flow-title").innerText = "👿 闇取引について";
-  document.getElementById("flow-content").innerHTML = `<p>
-    ・<b>メリット：</b>サイコロを常に<b>2個同時に振れる</b>ようになります。<br>
-    ・<b>デメリット：</b>ゴール時の引退賞金が<b>半額</b>になります。</p>
-    <button class="big-btn" onclick="showRuleRevolt()">次へ：下剋上について</button>`;
+  document.getElementById("flow-content").innerHTML = `<p>・<b>メリット：</b>サイコロを常に<b>2個同時に振れる</b>ようになります。<br>・<b>デメリット：</b>ゴール時の引退賞金が<b>半額</b>になります。</p><button class="big-btn" onclick="showRuleRevolt()">次へ：下剋上について</button>`;
 }
 
 function showRuleRevolt() {
   document.getElementById("flow-title").innerText = "💥 下剋上について";
-  document.getElementById("flow-content").innerHTML = `<p>
-    ・1位の人を指名してサイコロ勝負をします。<br>
-    ・<b>勝利：</b>1位の人と自分の<b>場所を入れ替えます！</b><br>
-    ・<b>敗北：</b>ペナルティとして<b>2,000円</b>を支払います。</p>
-    <button class="big-btn" onclick="startGame()">ゲームスタート！</button>`;
+  document.getElementById("flow-content").innerHTML = `<p>・1位の人を指名してサイコロ勝負をします。<br>・<b>勝利：</b>1位の人と自分の<b>場所を入れ替えます！</b><br>・<b>敗北：</b>ペナルティとして<b>2,000円</b>を支払います。</p><button class="big-btn" onclick="startGame()">ゲームスタート！</button>`;
 }
 
 function startGame() { document.getElementById("flow-overlay").style.display = "none"; renderBoard(); updateStatus(); }
@@ -257,19 +229,22 @@ function finishTurn() {
     players.forEach(p => { if(p !== sorted[0] && p.trait.id !== "fav") p.money -= 3000; });
   } else if(globalTurnCount % 3 === 0) {
     const r = Math.random(); currentWeather = r < 0.6 ? "sunny" : (r < 0.8 ? "rainy" : "windy");
-    document.getElementById("weather-display").innerText = currentWeather === "sunny" ? "☀️ 晴れ" : (currentWeather === "rainy" ? "☔ 豪雨" : "🍃 追い風");
-    showAlert(document.getElementById("weather-display").innerText);
+    // 💡 天気に応じたテキスト更新
+    let weatherHtml = "";
+    if(currentWeather === "sunny") weatherHtml = "☀️ 晴れ";
+    else if(currentWeather === "rainy") weatherHtml = "☔ 豪雨 <small>晴れ男/女チャンス！</small>";
+    else if(currentWeather === "windy") weatherHtml = "🍃 追い風 <small>ゴールに向かおう！追い風マスターチャンス！</small>";
+    
+    document.getElementById("weather-display").innerHTML = weatherHtml;
+    showAlert(currentWeather === "sunny" ? "☀️ 晴れ" : (currentWeather === "rainy" ? "☔ 豪雨" : "🍃 追い風"));
   }
   isMoving = false; document.getElementById("diceBtn").disabled = false;
   if(players.every(pl => pl.goal)) showFinalResults();
   else { 
     do { turn = (turn + 1) % players.length; } while(players[turn].goal); 
     updateStatus(); 
-    // 💡 ターンが回ってきた人のカードまで自動スクロール
     const activeCard = document.querySelector('.active-p');
-    if(activeCard) {
-      activeCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
+    if(activeCard) activeCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 }
 
