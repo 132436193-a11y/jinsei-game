@@ -36,7 +36,6 @@
   .condition-badge { font-size: 10px; font-weight: bold; padding: 2px 5px; border-radius: 10px; margin-left: 5px; }
 
   #game-area { flex: 1; display: flex; flex-direction: column; gap: 10px; }
-  /* 💡 天気表示エリアのスタイル調整 */
   #top-bar { background: white; padding: 10px; border-radius: 15px; display: flex; justify-content: space-around; align-items: center; }
   #weather-display { padding: 10px 20px; border-radius: 20px; font-weight: bold; background: var(--green); color: white; font-size: 14px; }
   
@@ -49,6 +48,9 @@
   #big-alert { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 70px; font-weight: bold; color: white; text-shadow: 0 0 30px rgba(0,0,0,1); z-index: 10000; display: none; white-space: nowrap; }
   .rolling { animation: dice-roll 0.1s infinite linear; }
   @keyframes dice-roll { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+  /* 💡 復元した結果発表用のスタイル */
+  .result-item { background: white; color: #333; margin: 10px 0; padding: 20px; border-radius: 15px; display: flex; justify-content: space-between; align-items: center; opacity: 0; transform: translateY(20px); transition: 0.5s; font-size: 24px; width: 100%; box-sizing: border-box; }
   #revolt-overlay { background: rgba(200, 0, 0, 0.98); z-index: 30000; display: none; }
   .revolt-title { font-size: 60px; font-weight: bold; color: yellow; text-shadow: 4px 4px 0 #000; animation: shake 0.2s infinite; }
 </style>
@@ -229,12 +231,10 @@ function finishTurn() {
     players.forEach(p => { if(p !== sorted[0] && p.trait.id !== "fav") p.money -= 3000; });
   } else if(globalTurnCount % 3 === 0) {
     const r = Math.random(); currentWeather = r < 0.6 ? "sunny" : (r < 0.8 ? "rainy" : "windy");
-    // 💡 天気に応じたテキスト更新
     let weatherHtml = "";
     if(currentWeather === "sunny") weatherHtml = "☀️ 晴れ";
     else if(currentWeather === "rainy") weatherHtml = "☔ 豪雨 <small>晴れ男/女チャンス！</small>";
     else if(currentWeather === "windy") weatherHtml = "🍃 追い風 <small>ゴールに向かおう！追い風マスターチャンス！</small>";
-    
     document.getElementById("weather-display").innerHTML = weatherHtml;
     showAlert(currentWeather === "sunny" ? "☀️ 晴れ" : (currentWeather === "rainy" ? "☔ 豪雨" : "🍃 追い風"));
   }
@@ -276,14 +276,20 @@ function updateStatus() {
 function showAlert(t) { const a = document.getElementById("big-alert"); a.innerText = t; a.style.display = "block"; setTimeout(() => a.style.display = "none", 2000); }
 function getJobTitle(m) { if(m>=50000) return {title:"👑 レジェンド", color:"#ffd700"}; if(m>=30000) return {title:"🎾 エース", color:"#ff4500"}; if(m>=10000) return {title:"💪 レギュラー", color:"#32cd32"}; if(m>=0) return {title:"🎾 平部員", color:"#4682b4"}; if(m>=-10000) return {title:"🧹 雑用係", color:"#8a2be2"}; return {title:"💀 部の恥", color:"#000"}; }
 
+// 💡 豪華な結果発表演出を復元
 function showFinalResults() {
   document.getElementById("result-overlay").style.display = "flex";
   const sorted = [...players].sort((a,b) => b.money - a.money);
   sorted.forEach((p, i) => {
     const item = document.createElement("div"); item.className = "result-item";
-    item.innerHTML = `<span>${i+1}位: ${p.name}</span><b>${p.money}円</b>`;
+    item.innerHTML = `<span>${i+1}位: ${p.name}</span> 💰<b>${p.money}円</b>`;
     document.getElementById("rank-list").appendChild(item);
-    setTimeout(() => { item.style.opacity = 1; item.style.transform = "translateY(0)"; }, (i+1) * 400);
+    // 時間差でふわっと表示
+    setTimeout(() => { 
+      item.style.opacity = 1; 
+      item.style.transform = "translateY(0)"; 
+      sounds.ev(); // ランクが出るたびに音を鳴らす
+    }, (i+1) * 600);
   });
 }
 </script>
