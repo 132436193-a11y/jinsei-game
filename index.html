@@ -14,6 +14,12 @@
   .explain-card h1 { color: var(--green); margin-top: 0; font-size: 28px; }
   .explain-card p { text-align: left; font-size: 16px; line-height: 1.4; margin: 15px 0; }
 
+  /* 特性選択用のスタイル */
+  .setup-grid { display: grid; grid-template-columns: 1fr; gap: 15px; margin-top: 20px; text-align: left; }
+  .setup-item { border: 2px solid #ddd; padding: 15px; border-radius: 15px; }
+  .trait-select { width: 100%; padding: 10px; font-size: 16px; border-radius: 8px; margin-top: 10px; }
+  .name-input { width: 100%; padding: 10px; font-size: 18px; border-radius: 8px; border: 2px solid var(--green); box-sizing: border-box; }
+
   .pyramid-container { display: flex; flex-direction: column; align-items: center; margin: 20px 0; gap: 4px; width: 100%; }
   .p-row { padding: 8px; border-radius: 4px; font-weight: bold; color: white; text-align: center; border: 1px solid rgba(0,0,0,0.1); box-sizing: border-box; }
   .p-1 { width: 40%; background: #ffd700; color: #333; }
@@ -43,13 +49,11 @@
   .square { background: var(--green); border: 1px solid white; border-radius: 6px; color: white; padding: 4px; font-size: 10px; }
   .type-reward { background: var(--gold) !important; color: #333 !important; }
   .type-mini { background: var(--red) !important; }
-  .type-warp { background: #3498db !important; }
   .token { width: 18px; height: 18px; border-radius: 50%; border: 2px solid white; display: inline-block; margin: 1px; }
   #big-alert { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 70px; font-weight: bold; color: white; text-shadow: 0 0 30px rgba(0,0,0,1); z-index: 10000; display: none; white-space: nowrap; }
   .rolling { animation: dice-roll 0.1s infinite linear; }
   @keyframes dice-roll { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-  /* 💡 復元した結果発表用のスタイル */
   .result-item { background: white; color: #333; margin: 10px 0; padding: 20px; border-radius: 15px; display: flex; justify-content: space-between; align-items: center; opacity: 0; transform: translateY(20px); transition: 0.5s; font-size: 24px; width: 100%; box-sizing: border-box; }
   #revolt-overlay { background: rgba(200, 0, 0, 0.98); z-index: 30000; display: none; }
   .revolt-title { font-size: 60px; font-weight: bold; color: yellow; text-shadow: 4px 4px 0 #000; animation: shake 0.2s infinite; }
@@ -61,8 +65,10 @@
   <div class="explain-card" id="flow-card">
     <h1 id="flow-title">🎾 テニス部人生ゲーム</h1>
     <div id="flow-content">
-      <p style="text-align: center;">引退試合を始めます。まずは参加人数と名前を入力してください。</p>
-      <button class="big-btn" onclick="inputPhase()">名前を入力して次へ</button>
+      <p style="text-align: center;">引退試合を始めます。まずは参加人数を教えてください。</p>
+      <input type="number" id="player-count-input" value="2" min="1" max="6" style="font-size: 24px; width: 60px; text-align: center; border-radius: 10px; border: 2px solid var(--green);">
+      <br>
+      <button class="big-btn" onclick="startExplanation()">次へ</button>
     </div>
   </div>
 </div>
@@ -112,18 +118,20 @@ function playTone(freq, type, duration) {
 }
 const sounds = { dice:()=>playTone(600,'square',0.1), ev:()=>playTone(523,'sine',0.2), bad:()=>playTone(150,'sawtooth',0.3) };
 
-const squares = [{t:"start", txt:"集合"}, {t:"normal", txt:"ガット切れ", m:-3000}, {t:"normal", txt:"チャリパンク", m:-1000}, {t:"reward", txt:"ラッキー"}, {t:"normal", txt:"大会決定", m:5000}, {t:"mini", txt:"★対決マス"}, {t:"warp", txt:"ワープ"}, {t:"normal", txt:"居残り練習", m:-500}, {t:"normal", txt:"勝利報酬", m:5000}, {t:"reward", txt:"ドリンク"}, {t:"normal", txt:"休み", m:0}, {t:"mini", txt:"★対決マス"}, {t:"normal", txt:"筋トレ代", m:-500}, {t:"warp", txt:"ワープ"}, {t:"normal", txt:"好調！", m:2000}, {t:"reward", txt:"OBの差し入れ"}, {t:"normal", txt:"大会遠征費", m:-2000}, {t:"mini", txt:"★対決マス"}, {t:"normal", txt:"臨時ボーナス", m:3000}, {t:"warp", txt:"ワープ"}, {t:"normal", txt:"忘れ物罰金", m:-1000}, {t:"normal", txt:"ガット張替", m:-1500}, {t:"reward", txt:"おやつタイム"}, {t:"mini", txt:"★対決マス"}, {t:"normal", txt:"褒美", m:2000}, {t:"warp", txt:"ワープ"}, {t:"normal", txt:"練習集中", m:1000}, {t:"reward", txt:"部費還元"}, {t:"normal", txt:"強打失敗", m:-1000}, {t:"mini", txt:"★対決マス"}, {t:"normal", txt:"絶好調", m:4000}, {t:"goal", txt:"引退"}];
-const traits = [{name:"顧問の愛弟子",id:"fav"},{name:"晴れ男/女",id:"rain_immune"},{name:"追い風マスター",id:"wind_pro"},{name:"逆境に強い雑草魂",id:"strong_mind"},{name:"普通の部員",id:"none"}];
+const squares = [{t:"start", txt:"集合"}, {t:"normal", txt:"ガット切れ", m:-3000}, {t:"normal", txt:"チャリパンク", m:-1000}, {t:"reward", txt:"ラッキー"}, {t:"normal", txt:"大会決定", m:5000}, {t:"mini", txt:"★対決マス"}, {t:"normal", txt:"居残特訓", m:500}, {t:"normal", txt:"居残り練習", m:-500}, {t:"normal", txt:"勝利報酬", m:5000}, {t:"reward", txt:"ドリンク"}, {t:"normal", txt:"休み", m:0}, {t:"mini", txt:"★対決マス"}, {t:"normal", txt:"筋トレ代", m:-500}, {t:"normal", txt:"朝練", m:1000}, {t:"normal", txt:"好調！", m:2000}, {t:"reward", txt:"OBの差し入れ"}, {t:"normal", txt:"大会遠征費", m:-2000}, {t:"mini", txt:"★対決マス"}, {t:"normal", txt:"臨時ボーナス", m:3000}, {t:"normal", txt:"掃除当番", m:200}, {t:"normal", txt:"忘れ物罰金", m:-1000}, {t:"normal", txt:"ガット張替", m:-1500}, {t:"reward", txt:"おやつタイム"}, {t:"mini", txt:"★対決マス"}, {t:"normal", txt:"褒美", m:2000}, {t:"normal", txt:"自主練", m:1000}, {t:"normal", txt:"練習集中", m:1000}, {t:"reward", txt:"部費還元"}, {t:"normal", txt:"強打失敗", m:-1000}, {t:"mini", txt:"★対決マス"}, {t:"normal", txt:"絶好調", m:4000}, {t:"goal", txt:"引退"}];
+const traits = [
+  {name:"顧問の愛弟子", id:"fav", desc:"10ターンごとの部費徴収を毎回免除される"},
+  {name:"晴れ男/女", id:"rain_immune", desc:"「豪雨」でも移動距離が減らない"},
+  {name:"追い風マスター", id:"wind_pro", desc:"「追い風」の時、誰よりも多く進める"},
+  {name:"逆境に強い雑草魂", id:"strong_mind", desc:"マイナスマスが半減し、逆にお金をもらえる"},
+  {name:"普通の部員", id:"none", desc:"特に特殊能力はないが、地道に頑張る"}
+];
 const conditions = [{n:"絶好調", c:"#00bfff", m:1.5}, {n:"普通", c:"#888", m:1.0}, {n:"スランプ", c:"#9932cc", m:0.5}];
-let players = [], turn = 0, isMoving = false, globalTurnCount = 0, rouletteTimer = null, currentWeather = "sunny";
+let players = [], turn = 0, isMoving = false, globalTurnCount = 0, rouletteTimer = null, currentWeather = "sunny", numPlayers = 2;
 
-function inputPhase() {
-  const count = parseInt(prompt("部員は何人？")) || 2;
-  players = [];
-  for(let i=0; i<count; i++){
-    const trait = traits[Math.floor(Math.random() * traits.length)];
-    players.push({ id:i, name: prompt((i+1)+"人目の名前")||"部員"+(i+1), pos: 0, money: 0, goal: false, color: `hsl(${i*(360/count)}, 70%, 50%)`, darkContract: false, hasRevolted: false, trait: trait, condition: conditions[1] });
-  }
+// 💡 流れの変更：人数 → 説明 → 名前＆特性
+function startExplanation() {
+  numPlayers = parseInt(document.getElementById("player-count-input").value) || 2;
   showRuleBase();
 }
 
@@ -134,26 +142,44 @@ function showRuleBase() {
 
 function showRulePyramid() {
   document.getElementById("flow-title").innerText = "📊 所持金による「格付け」";
-  document.getElementById("flow-content").innerHTML = `<p>所持金に応じて、あなたの称号がリアルタイムで変化します。</p><div class="pyramid-container"><div class="p-row p-1">5万円～：レジェンド</div><div class="p-row p-2">3万円～：エース</div><div class="p-row p-3">1万円～：レギュラー</div><div class="p-row p-4">0円～：平部員</div><div class="p-row p-5">-1万円～：雑用係</div><div class="p-row p-6">それ以下：部の恥</div></div><button class="big-btn" onclick="showRuleTrait()">次へ：プレイヤーの特性</button>`;
+  document.getElementById("flow-content").innerHTML = `<p>所持金に応じて、あなたの称号がリアルタイムで変化します。</p><div class="pyramid-container"><div class="p-row p-1">5万円～：レジェンド</div><div class="p-row p-2">3万円～：エース</div><div class="p-row p-3">1万円～：レギュラー</div><div class="p-row p-4">0円～：平部員</div><div class="p-row p-5">-1万円～：雑用係</div><div class="p-row p-6">それ以下：部の恥</div></div><button class="big-btn" onclick="showRuleTrait()">次へ：特性の選択へ</button>`;
 }
 
 function showRuleTrait() {
-  document.getElementById("flow-title").innerText = "✨ プレイヤーの特性と新要素";
-  document.getElementById("flow-content").innerHTML = `<p>・<b>顧問の愛弟子：</b>部費徴収を毎回免除されます。<br>・<b>晴れ男/女：</b>「豪雨」でも、足止めされずに進めます。<br>・<b>追い風マスター：</b>「追い風」の時、誰よりも多く進めます。<br>・<b>逆境に強い雑草魂：</b>マイナスイベントの損失が半分になり、逆に少しお金をもらえます！<br><br><b>【追加要素】</b><br>・<b>コンディション：</b>5ターンごとに「絶好調」や「スランプ」に変化します。<br>・<b>ダブルス：</b>対決マスで近くに部員がいれば協力ボーナスが入ります！</p><button class="big-btn" onclick="showRuleDark()">次へ：闇取引について</button>`;
+  document.getElementById("flow-title").innerText = "📝 名前と特性を決めよう";
+  let setupHtml = '<div class="setup-grid">';
+  for (let i = 0; i < numPlayers; i++) {
+    setupHtml += `
+      <div class="setup-item">
+        <strong>Player ${i+1}</strong><br>
+        <input type="text" class="name-input" id="name-${i}" placeholder="部員名を入力">
+        <select class="trait-select" id="trait-${i}">
+          ${traits.map(t => `<option value="${t.id}">${t.name} (${t.desc})</option>`).join("")}
+        </select>
+      </div>`;
+  }
+  setupHtml += '</div><button class="big-btn" onclick="initPlayers()">入部を完了してスタート！</button>';
+  document.getElementById("flow-content").innerHTML = setupHtml;
 }
 
-function showRuleDark() {
-  document.getElementById("flow-title").innerText = "👿 闇取引について";
-  document.getElementById("flow-content").innerHTML = `<p>・<b>メリット：</b>サイコロを常に<b>2個同時に振れる</b>ようになります。<br>・<b>デメリット：</b>ゴール時の引退賞金が<b>半額</b>になります。</p><button class="big-btn" onclick="showRuleRevolt()">次へ：下剋上について</button>`;
-}
-
-function showRuleRevolt() {
-  document.getElementById("flow-title").innerText = "💥 下剋上について";
-  document.getElementById("flow-content").innerHTML = `<p>・1位の人を指名してサイコロ勝負をします。<br>・<b>勝利：</b>1位の人と自分の<b>場所を入れ替えます！</b><br>・<b>敗北：</b>ペナルティとして<b>2,000円</b>を支払います。</p><button class="big-btn" onclick="startGame()">ゲームスタート！</button>`;
+function initPlayers() {
+  players = [];
+  for (let i = 0; i < numPlayers; i++) {
+    const name = document.getElementById(`name-${i}`).value || `部員${i+1}`;
+    const traitId = document.getElementById(`trait-${i}`).value;
+    const trait = traits.find(t => t.id === traitId);
+    players.push({
+      id: i, name: name, pos: 0, money: 0, goal: false,
+      color: `hsl(${i * (360 / numPlayers)}, 70%, 50%)`,
+      darkContract: false, hasRevolted: false, trait: trait, condition: conditions[1]
+    });
+  }
+  startGame();
 }
 
 function startGame() { document.getElementById("flow-overlay").style.display = "none"; renderBoard(); updateStatus(); }
 
+// --- ゲームロジック ---
 let currentRevoltTarget = null;
 function showRevolt演出() {
   const p = players[turn]; currentRevoltTarget = [...players].sort((a,b)=>b.money-a.money)[0];
@@ -230,7 +256,8 @@ function finishTurn() {
     const sorted = [...players].sort((a,b)=>a.money-b.money);
     players.forEach(p => { if(p !== sorted[0] && p.trait.id !== "fav") p.money -= 3000; });
   } else if(globalTurnCount % 3 === 0) {
-    const r = Math.random(); currentWeather = r < 0.6 ? "sunny" : (r < 0.8 ? "rainy" : "windy");
+    const r = Math.random(); 
+    currentWeather = r < 0.34 ? "sunny" : (r < 0.67 ? "rainy" : "windy");
     let weatherHtml = "";
     if(currentWeather === "sunny") weatherHtml = "☀️ 晴れ";
     else if(currentWeather === "rainy") weatherHtml = "☔ 豪雨 <small>晴れ男/女チャンス！</small>";
@@ -276,7 +303,6 @@ function updateStatus() {
 function showAlert(t) { const a = document.getElementById("big-alert"); a.innerText = t; a.style.display = "block"; setTimeout(() => a.style.display = "none", 2000); }
 function getJobTitle(m) { if(m>=50000) return {title:"👑 レジェンド", color:"#ffd700"}; if(m>=30000) return {title:"🎾 エース", color:"#ff4500"}; if(m>=10000) return {title:"💪 レギュラー", color:"#32cd32"}; if(m>=0) return {title:"🎾 平部員", color:"#4682b4"}; if(m>=-10000) return {title:"🧹 雑用係", color:"#8a2be2"}; return {title:"💀 部の恥", color:"#000"}; }
 
-// 💡 豪華な結果発表演出を復元
 function showFinalResults() {
   document.getElementById("result-overlay").style.display = "flex";
   const sorted = [...players].sort((a,b) => b.money - a.money);
@@ -284,12 +310,7 @@ function showFinalResults() {
     const item = document.createElement("div"); item.className = "result-item";
     item.innerHTML = `<span>${i+1}位: ${p.name}</span> 💰<b>${p.money}円</b>`;
     document.getElementById("rank-list").appendChild(item);
-    // 時間差でふわっと表示
-    setTimeout(() => { 
-      item.style.opacity = 1; 
-      item.style.transform = "translateY(0)"; 
-      sounds.ev(); // ランクが出るたびに音を鳴らす
-    }, (i+1) * 600);
+    setTimeout(() => { item.style.opacity = 1; item.style.transform = "translateY(0)"; sounds.ev(); }, (i+1) * 600);
   });
 }
 </script>
