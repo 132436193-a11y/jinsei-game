@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>テニス部人生ゲーム：完全版（ルール詳細復元）</title>
+<title>テニス部人生ゲーム：完全復元Ver.</title>
 <style>
   :root { --green: #2e8b57; --gold: #ffd700; --red: #e74c3c; --dark: #1a1a1a; }
   body { margin: 0; overflow: hidden; font-family: sans-serif; background: var(--dark); color: #333; }
@@ -11,7 +11,6 @@
   .full-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: none; justify-content: center; align-items: center; z-index: 20000; flex-direction: column; color: white; text-align: center; background: rgba(0,0,0,0.95); }
   .explain-card { background: white; color: #333; padding: 25px; border-radius: 30px; border: 8px solid var(--green); max-width: 800px; width: 95%; max-height: 90vh; overflow-y: auto; box-sizing: border-box; }
   
-  /* セットアップ用 */
   .setup-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-top: 15px; }
   .setup-item { border: 1px solid #ddd; padding: 12px; border-radius: 12px; background: #f9f9f9; text-align: left; }
   .setup-item label { font-size: 11px; color: #666; font-weight: bold; display: block; margin-top: 5px; }
@@ -22,7 +21,6 @@
   button.warn-btn { background: var(--red); box-shadow: 0 5px 0 #900; }
   button.dark-btn { background: #444; box-shadow: 0 5px 0 #222; }
 
-  /* ゲーム画面 */
   #sidebar { flex: 0 0 240px; background: rgba(255,255,255,0.9); border-radius: 15px; padding: 10px; display: flex; flex-direction: column; }
   #statusArea { overflow-y: auto; flex-grow: 1; font-size: 12px; }
   .money-card { padding: 8px; border-radius: 8px; background: #fff; border: 2px solid #ddd; margin-bottom: 5px; }
@@ -36,10 +34,7 @@
   .type-mini { background: var(--red) !important; color: white !important; }
   .type-reward b, .type-mini b { font-size: 24px !important; display: block; text-align: center; }
   .token-emoji { font-size: 20px; margin-right: -10px; filter: drop-shadow(1px 1px 1px rgba(0,0,0,0.5)); transition: 0.3s; }
-
-  /* 説明用リスト */
   .rule-list { text-align: left; font-size: 16px; line-height: 1.8; margin: 20px 0; }
-  .rule-list b { color: var(--green); }
 </style>
 </head>
 <body>
@@ -48,15 +43,14 @@
   <div class="explain-card" id="flow-card">
     <h2 id="flow-title" style="color:var(--green); margin-top:0;">🎾 1. 参加人数設定</h2>
     <div id="flow-content">
-      <p>まず、部活に参加する人数を決めましょう。</p>
       <input type="number" id="player-count-input" value="14" min="1" max="20" style="font-size: 24px; width: 80px; text-align: center;">
       <br><button class="big-btn" onclick="showStep2ManualInput()">次へ：名簿入力</button>
     </div>
   </div>
 </div>
 
-<div id="event-overlay" class="full-overlay"><div class="explain-card" style="text-align:center;"><div id="ev-player" style="font-size:40px;"></div><div id="ev-text" style="font-size:24px; font-weight:bold;"></div><div id="ev-money" style="font-size:22px; color:var(--red);"></div><div id="ev-extra"></div><button id="ev-close" class="big-btn" onclick="closeEvent()">次へ</button><button id="roulette-stop" class="big-btn" style="display:none; background:var(--gold); color:#333;" onclick="stopRoulette()">ストップ！</button></div></div>
-<div id="result-overlay" class="full-overlay"><h1>🏅 部活動終了！ 🏅</h1><div id="rank-list" style="width: 90%; overflow-y:auto; max-height:70vh;"></div><button class="big-btn" onclick="location.reload()">新しい代で始める</button></div>
+<div id="event-overlay" class="full-overlay"><div class="explain-card" style="text-align:center;"><div id="ev-player" style="font-size:40px;"></div><div id="ev-text" style="font-size:24px; font-weight:bold;"></div><div id="ev-money" style="font-size:22px; color:var(--red);"></div><button id="ev-close" class="big-btn" onclick="closeEvent()">次へ</button><button id="roulette-stop" class="big-btn" style="display:none; background:var(--gold); color:#333;" onclick="stopRoulette()">ストップ！</button></div></div>
+<div id="result-overlay" class="full-overlay"><h1>🏅 部活動終了！ 🏅</h1><div id="rank-list" style="width: 90%; overflow-y:auto; max-height:70vh;"></div><button class="big-btn" onclick="location.reload()">もう一度</button></div>
 
 <div class="main-container">
   <div id="sidebar">
@@ -69,10 +63,10 @@
       <div id="diceNum" style="font-size:40px; font-weight:bold;">🎲</div>
       <button id="diceBtn" class="big-btn" onclick="rollDice()">サイコロを振る</button>
       <div id="action-btns">
-        <button class="big-btn warn-btn" style="font-size:14px; padding:8px 15px;" onclick="triggerGekokujo()">異議あり！</button>
-        <button class="big-btn dark-btn" style="font-size:14px; padding:8px 15px;" onclick="triggerTrade()">闇取引</button>
+        <button class="big-btn warn-btn" onclick="triggerGekokujo()">異議あり！</button>
+        <button class="big-btn dark-btn" onclick="triggerTrade()">闇取引</button>
       </div>
-      <div style="font-size:12px; background:var(--red); color:white; padding:8px; border-radius:10px;">徴収まで: <span id="turns-left" style="font-weight:bold;">10</span></div>
+      <div style="font-size:12px; background:var(--red); color:white; padding:8px; border-radius:10px;">部費まで: <span id="turns-left" style="font-weight:bold;">10</span></div>
     </div>
     <div id="board"></div>
   </div>
@@ -81,16 +75,14 @@
 <script>
 const squares = [{t:"start", txt:"集合"}, {t:"normal", txt:"ガット切れ", m:-3000}, {t:"normal", txt:"チャリパンク", m:-1000}, {t:"reward", txt:"😁"}, {t:"normal", txt:"大会決定", m:5000}, {t:"mini", txt:"☠"}, {t:"normal", txt:"特訓", m:500}, {t:"normal", txt:"練習", m:-500}, {t:"normal", txt:"勝利", m:5000}, {t:"reward", txt:"😁"}, {t:"normal", txt:"休み", m:0}, {t:"mini", txt:"☠"}, {t:"normal", txt:"筋トレ", m:-500}, {t:"normal", txt:"朝練", m:1000}, {t:"normal", txt:"好調", m:2000}, {t:"reward", txt:"😁"}, {t:"normal", txt:"遠征費", m:-2000}, {t:"mini", txt:"☠"}, {t:"normal", txt:"ボーナス", m:3000}, {t:"normal", txt:"掃除", m:200}, {t:"normal", txt:"忘れ物", m:-1000}, {t:"normal", txt:"ガット張替", m:-1500}, {t:"reward", txt:"😁"}, {t:"mini", txt:"☠"}, {t:"normal", txt:"褒美", m:2000}, {t:"normal", txt:"自主練", m:1000}, {t:"normal", txt:"練習集中", m:1000}, {t:"reward", txt:"😁"}, {t:"normal", txt:"強打失敗", m:-1000}, {t:"mini", txt:"☠"}, {t:"normal", txt:"絶好調", m:4000}, {t:"goal", txt:"引退"}];
 const traits = [{id:"none", name:"普通の部員"}, {id:"fav", name:"顧問の愛弟子"}, {id:"sun", name:"晴れ男/女"}, {id:"wind", name:"追い風マスタ"}, {id:"strong", name:"雑草魂"}];
-
 let players = [], turn = 0, isMoving = false, globalTurnCount = 0, currentWeather = "sunny";
 
-// ステップ2：入力（幹事がやる）
 function showStep2ManualInput() {
   const count = parseInt(document.getElementById("player-count-input").value) || 14;
   document.getElementById("flow-title").innerText = "🎾 2. 部員情報の入力";
-  let html = '<p>名前・絵文字・特性を一人ずつ設定してください。</p><div class="setup-grid">';
+  let html = '<div class="setup-grid">';
   for(let i=1; i<=count; i++) {
-    html += `<div class="setup-item"><strong>部員 ${i}</strong><label>名前</label><input type="text" id="p-name-${i}" placeholder="部員名"><label>絵文字</label><input type="text" id="p-emoji-${i}" value="🎾"><label>特性</label><select id="p-trait-${i}">${traits.map(t=>`<option value="${t.id}">${t.name}</option>`).join("")}</select></div>`;
+    html += `<div class="setup-item"><strong>部員 ${i}</strong><label>名前</label><input type="text" id="p-name-${i}"><label>絵文字</label><input type="text" id="p-emoji-${i}" value="🎾"><label>特性</label><select id="p-trait-${i}">${traits.map(t=>`<option value="${t.id}">${t.name}</option>`).join("")}</select></div>`;
   }
   html += `</div><button class="big-btn" onclick="processManualAndNext(${count})">入力完了：ルール説明へ</button>`;
   document.getElementById("flow-content").innerHTML = html;
@@ -107,72 +99,41 @@ function processManualAndNext(count) {
   showStep3DetailedRules();
 }
 
-// ステップ3：ルール説明（みんなに見せる用）
 function showStep3DetailedRules() {
   document.getElementById("flow-title").innerText = "📜 3. テニス部人生ゲームの掟";
-  document.getElementById("flow-content").innerHTML = `
-    <div class="rule-list">
-      <p><b>■ 基本ルール：</b><br>引退時（ゴール時）に一番お金を持っていた部員が優勝です。</p>
-      <p><b>■ 引退賞金：</b><br>厳しい部活を乗り越えゴールすると<b>30,000円</b>の祝儀が出ます。</p>
-      <p><b>■ 定期部費徴収：</b><br>10ターンごとに部費の回収があります。最下位以外の全員が<b>3,000円</b>没収されます。ただし「顧問の愛弟子」だけは徴収を回避できます。</p>
-      <p><b>■ 天候の影響：</b><br>「豪雨」は移動距離が半分に、「追い風」は距離が伸びます。</p>
-    </div>
-    <button class="big-btn" onclick="showStep4DetailedPyramid()">次へ：格付けの重要性</button>
-  `;
+  document.getElementById("flow-content").innerHTML = `<div class="rule-list"><p><b>■ 基本ルール：</b><br>ゴール時に一番お金を持っていた部員が優勝です。</p><p><b>■ 引退賞金：</b><br>ゴールすると<b>30,000円</b>獲得！</p><p><b>■ 部費徴収：</b><br>10ターンごとに最下位以外から<b>3,000円</b>没収。愛弟子は免除。</p><p><b>■ 天候：</b><br>豪雨は移動半減、追い風は移動増。</p></div><button class="big-btn" onclick="showStep4DetailedPyramid()">次へ：格付けについて</button>`;
 }
 
-// ステップ4：格付け説明
 function showStep4DetailedPyramid() {
   document.getElementById("flow-title").innerText = "📊 4. 所持金による格付け";
-  document.getElementById("flow-content").innerHTML = `
-    <p>テニス部は実力（金）がすべてです。</p>
-    <div style="display:flex; flex-direction:column; gap:8px; margin:20px 0;">
-      <div style="background:#ffd700; padding:12px; border-radius:10px; font-weight:bold;">👑 5万円～：レジェンド（神）</div>
-      <div style="background:#ff4500; color:white; padding:12px; border-radius:10px;">🎾 3万円～：エース（主力）</div>
-      <div style="background:#32cd32; color:white; padding:12px; border-radius:10px;">💪 1万円～：レギュラー</div>
-      <div style="background:#4682b4; color:white; padding:12px; border-radius:10px;">👤 0円～：平部員</div>
-      <div style="background:#8a2be2; color:white; padding:12px; border-radius:10px;">🧹 ～-1円：雑用係（地獄）</div>
-    </div>
-    <p>雑用係になると、下剋上や闇取引で這い上がるしかありません。</p>
-    <button class="big-btn" onclick="startGame()">部活動開始！！</button>
-  `;
+  document.getElementById("flow-content").innerHTML = `<div style="display:flex; flex-direction:column; gap:8px; margin:20px 0;"><div style="background:#ffd700; padding:12px; border-radius:10px;">👑 5万円～：レジェンド</div><div style="background:#ff4500; color:white; padding:12px; border-radius:10px;">🎾 3万円～：エース</div><div style="background:#32cd32; color:white; padding:12px; border-radius:10px;">💪 1万円～：レギュラー</div><div style="background:#4682b4; color:white; padding:12px; border-radius:10px;">👤 0円～：平部員</div><div style="background:#8a2be2; color:white; padding:12px; border-radius:10px;">🧹 ～-1円：雑用係</div></div><button class="big-btn" onclick="startGame()">部活動開始！！</button>`;
 }
 
-function startGame() { 
-  document.getElementById("flow-overlay").style.display = "none"; 
-  renderBoard(); 
-  updateStatus(); 
-}
-
-// --- 以下、ゲームロジックは完全維持 ---
+function startGame() { document.getElementById("flow-overlay").style.display = "none"; renderBoard(); updateStatus(); }
 
 function triggerGekokujo() {
   if(isMoving) return;
   const topPlayer = [...players].sort((a,b)=>b.pos - a.pos)[0];
   const p = players[turn];
   if(p === topPlayer) { alert("君が1位だよ！"); return; }
-  if(!confirm(`${p.name}が1位の${topPlayer.name}に「異議あり！」を宣言しました。\nダイス勝負で勝てば場所を入れ替え、負ければ顧問に怒られ2000円没収です。いいですか？`)) return;
+  if(!confirm(`${p.name}が1位に下剋上を挑みます！ダイス勝負！`)) return;
   const pRoll = Math.floor(Math.random()*6)+1;
   const tRoll = Math.floor(Math.random()*6)+1;
-  alert(`${p.name}の出目: ${pRoll}\n${topPlayer.name}の出目: ${tRoll}`);
-  if(pRoll > tRoll) {
-    alert("下剋上成功！一気にエースの座へ！");
-    const tmp = p.pos; p.pos = topPlayer.pos; topPlayer.pos = tmp;
-    renderBoard();
-  } else { alert("下剋上失敗…顧問に絞られて2000円没収。"); p.money -= 2000; updateStatus(); }
+  alert(`あなた: ${pRoll} vs 1位: ${tRoll}`);
+  if(pRoll > tRoll) { alert("下剋上成功！"); const tmp = p.pos; p.pos = topPlayer.pos; topPlayer.pos = tmp; renderBoard(); }
+  else { alert("失敗…-2000円"); p.money -= 2000; updateStatus(); }
 }
 
 function triggerTrade() {
   if(isMoving) return;
   const p = players[turn];
-  const targetName = prompt("取引を持ちかける相手の名前を入力してください");
+  const targetName = prompt("相手の名前は？");
   const target = players.find(x => x.name === targetName);
-  if(!target || target === p) { alert("相手が見つかりません。"); return; }
-  const amt = parseInt(prompt(`${target.name}へ渡す賄賂の金額を入れてください。\n成立すれば3マス進めます。`));
-  if(isNaN(amt) || p.money < amt) { alert("お金が足りないか、無効な金額です。"); return; }
+  if(!target || target === p) return;
+  const amt = parseInt(prompt("いくら払う？（成立で3マス進む）"));
+  if(isNaN(amt) || p.money < amt) return;
   p.money -= amt; target.money += amt; p.pos = Math.min(squares.length-1, p.pos + 3);
-  alert(`取引成立！${target.name}に${amt}円を渡し、3マス進みました。`); 
-  renderBoard(); updateStatus();
+  alert("取引成立！"); renderBoard(); updateStatus();
 }
 
 function rollDice() {
@@ -214,11 +175,8 @@ function startRoulette(p) {
     document.getElementById("ev-money").innerText = "+" + r + "円！"; p._lastR = r;
   }, 80);
 }
-
 function stopRoulette() { clearInterval(rouletteTimer); players[turn].money += players[turn]._lastR; document.getElementById("roulette-stop").style.display = "none"; document.getElementById("ev-close").style.display = "inline-block"; }
-
 function showEvent(p, t, txt) { document.getElementById("ev-player").innerHTML = `${p.emoji} ${p.name}`; document.getElementById("ev-text").innerText = t; document.getElementById("ev-money").innerHTML = txt; document.getElementById("event-overlay").style.display = "flex"; }
-
 function closeEvent() { 
   document.getElementById("event-overlay").style.display = "none"; globalTurnCount++;
   if(globalTurnCount % 3 === 0) {
@@ -228,7 +186,7 @@ function closeEvent() {
   if(globalTurnCount % 10 === 0) {
     const sorted = [...players].sort((a,b) => a.money - b.money); const bottom = sorted[0];
     players.forEach(pl => { if(pl !== bottom && pl.trait.id !== "fav" && !pl.goal) pl.money -= 3000; });
-    alert("💰 定期部費徴収！最下位と愛弟子以外は-3000円です。");
+    alert("💰 定期徴収！");
   }
   document.getElementById("turns-left").innerText = 10 - (globalTurnCount % 10);
   isMoving = false;
@@ -238,19 +196,15 @@ function closeEvent() {
     document.getElementById("rank-list").innerHTML = res.map((p, i) => `<div style="padding:10px; border-bottom:1px solid #ddd;">${i+1}位: ${p.emoji} ${p.name} 💰${p.money}円</div>`).join("");
   } else { do { turn = (turn + 1) % players.length; } while(players[turn].goal); updateStatus(); }
 }
-
 function renderBoard() {
   const b = document.getElementById("board"); b.innerHTML = "";
   squares.forEach((s, i) => { b.innerHTML += `<div class="square type-${s.t}"><small>${i}</small><b>${s.txt}</b><div id="p-at-${i}" style="display:flex; flex-wrap:wrap; min-height:20px;"></div></div>`; });
   players.forEach(p => { const t = document.createElement("span"); t.className = "token-emoji"; t.innerText = p.emoji; document.getElementById(`p-at-${p.pos}`).appendChild(t); });
 }
-
 function updateStatus() {
   document.getElementById("statusArea").innerHTML = players.map((p, i) => `
     <div class="money-card ${i===turn?'active-p':''}">
-      <span style="font-size:18px;">${p.emoji}</span> <b>${p.name}</b><br>
-      <span style="color:var(--green); font-weight:bold;">💰 ${p.money}円</span><br>
-      <small>${p.trait.name}</small>
+      <span style="font-size:18px;">${p.emoji}</span> <b>${p.name}</b><br>💰 ${p.money}円<br><small>${p.trait.name}</small>
     </div>`).join("");
 }
 </script>
