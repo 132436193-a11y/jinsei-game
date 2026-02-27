@@ -35,10 +35,10 @@
 </head>
 <body>
 
-<div id="start-overlay">
+<div id="start-overlay" class="full-overlay" style="display:flex;">
   <div class="scroll-card" id="setup-content" style="background:white; padding:30px; border-radius:30px; max-width:800px; width:90%; color:#333; overflow-y:auto; max-height:90vh;">
     <h1 style="color:var(--pink); text-align:center;">🎾 女子テニス部人生ゲーム 🎾</h1>
-    <div style="text-align:center;">
+    <div id="initial-screen" style="text-align:center;">
       人数を入力してください (最大14人): <br>
       <input type="number" id="p-count" value="4" min="1" max="14" style="font-size:24px; width:80px; text-align:center; margin:15px;">
       <br><button class="big-btn" onclick="generateSetup()">部員登録へ</button>
@@ -54,7 +54,7 @@
       相手: <select id="trade-target-select" style="font-size:18px;"></select>
       <br>
       <button class="big-btn" style="background:#444;" onclick="executeTrade()">契約する</button>
-      <button class="big-btn" style="background:#888;" onclick="closeEvent()">断って自力で振る</button>
+      <button class="big-btn" style="background:#888;" onclick="refuseTrade()">断って自力で振る</button>
     </div>
     <div id="gekokujo-roll" style="display:none; font-size:40px;">🎲 ? VS 🎲 ?</div>
     <div id="button-area">
@@ -139,7 +139,7 @@ function showRules() {
       4.サイコロを振るたびに天気が変わります。<br>
       5.連帯責任で全員からお金が引かれるマスがあります。<br>
       6.赤い枠は一回休みです。<br>
-      7.所持金マイナス時は「闇取引」で救済あり。<br>
+      7.所持金マイナス時は「闇取引」で救済あり。断ってもサイコロを振れます。<br>
       8.「下剋上」ボタンで1位と位置を交代できます。<br>
       9.ボーナスマスはルーレットです。<br>
       10.引退式はふわっと表示されます。
@@ -201,9 +201,11 @@ function rollDice() {
     return;
   }
   
+  startDiceRoll();
+}
+
+function startDiceRoll() {
   isMoving = true; document.getElementById("diceBtn").disabled = true;
-  
-  // 天気の自動変更（確認ボタンなし）
   currentWeather = weathers[Math.floor(Math.random()*weathers.length)];
   document.getElementById("weather-display").innerText = currentWeather.n;
 
@@ -213,15 +215,11 @@ function rollDice() {
     if(++count > 10) {
       clearInterval(timer);
       let dice = Math.floor(Math.random()*6)+1;
-      
-      // 特性と天気のボーナス計算
       let bonus = players[turn].trait.bonus(players[turn], currentWeather);
       let totalSteps = dice + bonus;
-      
       let msg = `🎲 ${dice}`;
       if(bonus > 0) msg += ` + 特性ボーナス ${bonus}`;
       document.getElementById("diceNum").innerText = msg;
-      
       setTimeout(() => movePlayer(totalSteps), 800);
     }
   }, 60);
@@ -272,9 +270,9 @@ function stopRoulette() {
 
 function triggerTradeUI() {
   const p = players[turn];
-  const others = players.filter(t => t !== p && !t.goal && t.money >= 3000);
+  const others = players.filter(t => t !== p); // 自分以外の全員を表示
   const sel = document.getElementById("trade-target-select");
-  sel.innerHTML = others.length > 0 ? others.map(t => `<option value="${t.id}">${t.name}</option>`).join("") : `<option value="og">謎のOG</option>`;
+  sel.innerHTML = others.map(t => `<option value="${t.id}">${t.emoji} ${t.name}</option>`).join("");
   document.getElementById("trade-ui").style.display = "block";
   document.getElementById("ev-close").style.display = "none";
   showEvent(p, "闇取引", "3000円で3マス進む？<br><small>借金中のため救済措置です</small>");
@@ -282,8 +280,14 @@ function triggerTradeUI() {
 
 function executeTrade() {
   const p = players[turn]; const tid = document.getElementById("trade-target-select").value;
-  p.money -= 3000; if(tid !== "og") players[tid].money += 3000;
+  p.money -= 3000; players[tid].money += 3000;
   p.pos = Math.min(squares.length-1, p.pos + 3); renderBoard(); closeEvent();
+}
+
+function refuseTrade() {
+  document.getElementById("event-overlay").style.display = "none";
+  document.getElementById("trade-ui").style.display = "none";
+  startDiceRoll(); // 断った後にサイコロを振る
 }
 
 function triggerGekokujo() {
