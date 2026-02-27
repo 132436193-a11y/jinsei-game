@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>テニス部人生ゲーム：究極・真レジェンド版 BGM付</title>
+<title>テニス部人生ゲーム：爽快BGM版</title>
 <style>
   :root { --green: #2e8b57; --gold: #ffd700; --red: #e74c3c; --dark: #1a1a1a; --rain: #4682b4; --wind: #f0e68c; }
   body { margin: 0; overflow: hidden; font-family: sans-serif; background: var(--dark); color: #333; }
@@ -95,24 +95,30 @@
 </div>
 
 <script>
-// --- BGM System ---
+// --- BGM System (Bright and Happy Melody) ---
 let audioCtx = null;
-function playTone(freq, duration, type = "square") {
+let bgmTimer = null;
+function playTone(freq, duration, type = "sine", vol = 0.1) {
   if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   const osc = audioCtx.createOscillator();
   const gain = audioCtx.createGain();
   osc.type = type;
   osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-  gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+  gain.gain.setValueAtTime(vol, audioCtx.currentTime);
   gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
   osc.connect(gain); gain.connect(audioCtx.destination);
   osc.start(); osc.stop(audioCtx.currentTime + duration);
 }
 
-function startBGM() {
-  setInterval(() => {
-    if(!isMoving) playTone(261.63, 0.1, "sine"); // 通常時ド
-  }, 1000);
+function startBrightBGM() {
+  const melody = [523.25, 659.25, 783.99, 1046.50]; // Cメジャーコード (ド・ミ・ソ・高いド)
+  let i = 0;
+  bgmTimer = setInterval(() => {
+    if(!isMoving) {
+      playTone(melody[i % 4], 0.2, "triangle", 0.05);
+      i++;
+    }
+  }, 400); // 軽快なテンポ
 }
 
 // --- Game Logic ---
@@ -160,12 +166,15 @@ function showRules(count) {
 }
 
 function initGame(count) {
-  startBGM();
+  startBrightBGM(); // ここでBGM開始
   for(let i=0; i<count; i++) {
+    const nameVal = document.getElementById(`n-${i}`).value;
+    const emojiVal = document.getElementById(`e-${i}`).value;
+    const traitVal = document.getElementById(`t-${i}`).value;
     players.push({
-      id:i, name: document.getElementById(`n-${i}`).value, emoji: document.getElementById(`e-${i}`).value,
-      pos: 0, money: 0, goal: false, color: `hsl(${i*(360/count)}, 70%, 50%)`,
-      trait: traits.find(t=>t.id === document.getElementById(`t-${i}`).value)
+      id:i, name: nameVal, emoji: emojiVal,
+      pos: 0, money: 0, goal: false,
+      trait: traits.find(t=>t.id === traitVal)
     });
   }
   document.getElementById("start-overlay").style.display = "none";
@@ -209,7 +218,7 @@ function updateStatus() {
 function rollDice() {
   if(isMoving || players[turn].goal) return;
   isMoving = true; document.getElementById("diceBtn").disabled = true;
-  playTone(440, 0.1, "square");
+  playTone(660, 0.05, "square");
   let count = 0;
   const timer = setInterval(() => {
     document.getElementById("diceNum").innerText = ["⚀","⚁","⚂","⚃","⚄","⚅"][Math.floor(Math.random()*6)];
@@ -222,7 +231,7 @@ function rollDice() {
       if(currentWeather === "windy" && p.trait.id === "wind") final++;
       if(currentWeather === "rainy" && p.trait.id !== "strong") final = Math.max(1, final - 1);
       document.getElementById("diceNum").innerHTML = `<span style="font-size:60px;">${final}</span>`;
-      playTone(523.25, 0.2, "square");
+      playTone(880, 0.1, "square");
       setTimeout(() => move(final), 600);
     }
   }, 60);
@@ -231,7 +240,7 @@ function rollDice() {
 function move(steps) {
   let p = players[turn];
   p.pos = Math.min(squares.length - 1, p.pos + steps);
-  if(p.pos === squares.length - 1) { p.goal = true; p.money += 15000; playTone(880, 0.5); }
+  if(p.pos === squares.length - 1) { p.goal = true; p.money += 15000; playTone(1320, 0.4); }
   renderBoard();
   const s = squares[p.pos];
   
@@ -241,7 +250,7 @@ function move(steps) {
     let m = s.m || 0;
     if(m < 0 && p.trait.id === "strong") m = Math.floor(m/2);
     p.money += m;
-    if(m < 0) playTone(110, 0.4, "sawtooth");
+    if(m < 0) playTone(220, 0.3, "sawtooth"); else if(m > 0) playTone(1046, 0.2);
     showEvent(p, (m >= 0) ? "👍 出来事" : "👎 事件", s.txt + (m ? `<br>${m}円` : ""), true);
   }
 }
@@ -254,7 +263,7 @@ function triggerGekokujo() {
   showEvent(p, "💥 下剋上開始！", `${target.name}を抜けるか勝負！`, false);
   let count = 0;
   const rollTimer = setInterval(() => {
-    playTone(Math.random()*100 + 200, 0.05);
+    playTone(Math.random()*200 + 400, 0.05);
     const diceArr = ["⚀","⚁","⚂","⚃","⚄","⚅"];
     document.getElementById("gekokujo-roll").innerText = `${diceArr[Math.floor(Math.random()*6)]} VS ${diceArr[Math.floor(Math.random()*6)]}`;
     if(++count > 15) {
@@ -264,7 +273,7 @@ function triggerGekokujo() {
       document.getElementById("gekokujo-roll").innerText = `🎲${r1} VS 🎲${r2}`;
       setTimeout(() => {
         document.getElementById("gekokujo-roll").style.display = "none";
-        if(success) playTone(660, 0.3); else playTone(110, 0.5);
+        if(success) playTone(1320, 0.3); else playTone(220, 0.5);
         showEvent(p, success ? "🎊 成功！" : "💀 失敗", success ? "位置を入れ替えた！" : "罰金 3000円", true);
         if(success) { let tmp = p.pos; p.pos = target.pos; target.pos = tmp; renderBoard(); }
         else { p.money -= 3000; }
@@ -289,7 +298,7 @@ function executeTrade() {
   const target = players[document.getElementById("trade-target-select").value];
   p.money -= 3000; target.money += 3000; p.pos = Math.min(squares.length-1, p.pos + 3);
   document.getElementById("trade-ui").style.display = "none";
-  playTone(220, 0.2, "sawtooth");
+  playTone(440, 0.2, "sawtooth");
   showEvent(p, "🤝 契約成立", `${target.name}と裏取引完了。強引に3マス前進。`, true);
   renderBoard();
 }
@@ -314,7 +323,7 @@ function finishTurn() {
   if(globalTurnCount % 10 === 0) {
     const sorted = [...players].sort((a,b)=>a.money-b.money);
     players.forEach(p => { if(p !== sorted[0] && p.trait.id !== "fav" && !p.goal) p.money -= 3000; });
-    playTone(150, 0.6, "sawtooth");
+    playTone(330, 0.6, "sawtooth");
     document.getElementById("big-alert").innerHTML = "💰 部費徴収！<br><small style='font-size:30px'>-3000円</small>";
     document.getElementById("big-alert").style.display = "block"; setTimeout(() => document.getElementById("big-alert").style.display="none", 2000);
   } else if(globalTurnCount % 3 === 0) {
@@ -330,7 +339,7 @@ function startRoulette(p) {
   document.getElementById("roulette-stop").style.display = "inline-block";
   document.getElementById("ev-close").style.display = "none";
   rouletteTimer = setInterval(() => { 
-    playTone(800, 0.02);
+    playTone(1046, 0.02);
     document.getElementById("ev-money").innerText = ["💰3000円","💰8000円","🧃ジュース","🍪お菓子"][Math.floor(Math.random()*4)]; 
   }, 50);
 }
@@ -339,7 +348,7 @@ function stopRoulette() {
   clearInterval(rouletteTimer);
   const res = document.getElementById("ev-money").innerText;
   if(res.includes("円")) players[turn].money += parseInt(res.replace(/[^0-9]/g, ""));
-  playTone(900, 0.3);
+  playTone(1320, 0.3);
   document.getElementById("roulette-stop").style.display = "none";
   document.getElementById("ev-close").style.display = "inline-block";
 }
@@ -366,7 +375,7 @@ function showFinalResults() {
     item.innerHTML = `<span>第${index+1}位: ${p.emoji}${p.name}</span> --- <b>${p.money}円</b>`;
     document.getElementById("rank-list").appendChild(item);
     setTimeout(() => { 
-      playTone(440 + (i*100), 0.2);
+      playTone(523 + (i*100), 0.2);
       item.classList.add("rank-show"); 
       if(i === shuffledIndices.length-1) document.getElementById("restart-btn").style.display="block"; 
     }, i * 1200);
