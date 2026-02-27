@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>テニス部人生ゲーム：テスト用・少人数版</title>
+<title>テニス部人生ゲーム：テスト用・少人数版 改</title>
 <style>
   :root { --green: #2e8b57; --gold: #ffd700; --red: #e74c3c; --dark: #1a1a1a; --rain: #4682b4; --wind: #f0e68c; }
   body { margin: 0; overflow: hidden; font-family: sans-serif; background: var(--dark); color: #333; }
@@ -43,8 +43,8 @@
 
 <div id="start-overlay">
   <div class="scroll-card" id="setup-content">
-    <h1 style="color:var(--green)">🎾 テニス部人生ゲーム 🎾<br><small>(テスト用少人数版)</small></h1>
-    <p>テスト人数を入力: <input type="number" id="p-count" value="2" style="font-size:20px; width:60px;"></p>
+    <h1 style="color:var(--green)">🎾 テニス部人生ゲーム 🎾</h1>
+    <p>人数を入力: <input type="number" id="p-count" value="2" style="font-size:20px; width:60px;"></p>
     <button class="big-btn" onclick="generateSetup()">次へ：部員設定</button>
   </div>
 </div>
@@ -110,9 +110,9 @@ function generateSetup() {
   let html = `<h2 style="color:var(--green)">部員設定</h2><div class="setup-grid">`;
   const defaultEmojis = ["🎾", "🔥", "💨", "💧", "🌟"];
   for(let i=0; i<count; i++) {
-    html += `<div class="setup-item">#${i+1} 名前:<input id="n-${i}" style="width:70px;" value="テスター${i+1}"><br>絵文字:<input id="e-${i}" style="width:30px;" value="${defaultEmojis[i%5]}"><br>特性:<select id="t-${i}">${traits.map(t=>`<option value="${t.id}">${t.n}</option>`).join("")}</select></div>`;
+    html += `<div class="setup-item">#${i+1} 名前:<input id="n-${i}" style="width:70px;" value="部員${i+1}"><br>絵文字:<input id="e-${i}" style="width:30px;" value="${defaultEmojis[i%5]}"><br>特性:<select id="t-${i}">${traits.map(t=>`<option value="${t.id}">${t.n}</option>`).join("")}</select></div>`;
   }
-  html += `</div><button class="big-btn" onclick="initGame(${count})">テスト開始！</button>`;
+  html += `</div><button class="big-btn" onclick="initGame(${count})">ゲーム開始！</button>`;
   document.getElementById("setup-content").innerHTML = html;
 }
 
@@ -140,14 +140,24 @@ function renderBoard() {
 }
 
 function updateStatus() {
+  const sortedByMoney = [...players].sort((a,b)=>b.money - a.money);
   const sortedByPos = [...players].sort((a,b)=>b.pos - a.pos);
   const statusArea = document.getElementById("statusArea");
-  statusArea.innerHTML = players.map((p, i) => `
+  
+  statusArea.innerHTML = players.map((p, i) => {
+    let title = "一般部員";
+    if (p === sortedByPos[0]) title = "🏅エース";
+    else if (p === sortedByMoney[sortedByMoney.length - 1]) title = "💀部の恥";
+
+    return `
     <div id="card-${i}" class="money-card ${i===turn?'active-p':''}">
+      <span style="font-size:12px; color:var(--red); font-weight:bold;">${title}</span><br>
       <span style="font-size:18px;">${p.emoji}</span> <b>${p.name}</b><br>💰 ${p.money}円<br><small>${p.trait.n}</small>
-    </div>`).join("");
+    </div>`}).join("");
+  
   const activeCard = document.getElementById(`card-${turn}`);
   if(activeCard) activeCard.scrollIntoView({ block: "nearest", behavior: "smooth" });
+
   document.getElementById("revolt-btn").style.display = (players.length > 1 && players[turn] !== sortedByPos[0] && !players[turn].goal) ? "block" : "none";
   document.getElementById("trade-btn").style.display = (players[turn].money < 0) ? "block" : "none";
 }
@@ -183,7 +193,7 @@ function move(steps) {
   else {
     let m = s.m || 0;
     if(m < 0 && p.trait.id === "strong") m = Math.floor(m/2);
-    p.money += m;
+    p.money += m; // ここでマイナスなら正しく引かれます
     showEvent(p, (m >= 0) ? "👍 出来事" : "👎 事件", s.txt + (m ? `<br>${m}円` : ""), true);
   }
 }
