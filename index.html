@@ -53,10 +53,10 @@
     <div id="trade-ui" style="display:none;">
       相手: <select id="trade-target-select" style="font-size:18px;"></select>
       <br>
-      <button class="big-btn" style="background:#444;" onclick="executeTrade()">契約する</button>
-      <button class="big-btn" style="background:#888;" onclick="refuseTrade()">断って自力で振る</button>
+      <button class="big-btn" style="background:#444;" onclick="executeTradeRoll()">契約して振る(リスクあり)</button>
+      <button class="big-btn" style="background:#888;" onclick="refuseTrade()">断って普通に振る(堅実)</button>
     </div>
-    <div id="gekokujo-roll" style="display:none; font-size:40px;">🎲 ? VS 🎲 ?</div>
+    <div id="game-dice-roll" style="display:none; font-size:40px;">🎲 ?</div>
     <div id="button-area">
       <button id="ev-close" class="big-btn" onclick="closeEvent()">了解</button>
     </div>
@@ -88,6 +88,7 @@
 
 <script>
 let players = [], turn = 0, isMoving = false, rouletteTimer = null, currentWeather = {id:"sunny", n:"☀️ 晴れ"};
+const emojis_list = ["🎾","🎀","💄","🍦","🌸","⭐","🔥","💧","🍀","🌙","☀️","🌈","🐾","🎨"];
 const traits = [
   {id:"fav", n:"顧問の愛弟子", bonus: (p, w) => 1},
   {id:"sun", n:"晴れ女", bonus: (p, w) => w.id === "sunny" ? 2 : 0},
@@ -113,18 +114,29 @@ const squares = [
 
 function generateSetup() {
   const count = parseInt(document.getElementById("p-count").value);
-  let html = `<h2 style="color:var(--pink); text-align:center;">部員設定</h2><div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:10px;">`;
-  const emojis = ["🎾","🎀","💄","🍦","🌸","⭐","🔥","💧","🍀","🌙","☀️","🌈","🐾","🎨"];
-  for(let i=0; i<count; i++) html += `<div style="background:#fff0f5; padding:5px; border-radius:5px; font-size:12px; border:1px solid var(--pink);">#${i+1} 名前:<input id="n-${i}" style="width:60px;" value="部員${i+1}"><br>特性:<select id="t-${i}">${traits.map(t=>`<option value="${t.id}">${t.n}</option>`).join("")}</select></div>`;
+  let html = `<h2 style="color:var(--pink); text-align:center;">部員設定</h2><div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:10px;">`;
+  for(let i=0; i<count; i++) {
+    html += `<div style="background:#fff0f5; padding:8px; border-radius:8px; font-size:12px; border:1px solid var(--pink);">
+      #${i+1} 名前:<input id="n-${i}" style="width:70px;" value="部員${i+1}"><br>
+      絵文字:<select id="e-${i}">${emojis_list.map(e=>`<option value="${e}" ${emojis_list.indexOf(e)===i?'selected':''}>${e}</option>`).join("")}</select><br>
+      特性:<select id="t-${i}">${traits.map(t=>`<option value="${t.id}">${t.n}</option>`).join("")}</select>
+    </div>`;
+  }
   html += `</div><button class="big-btn" style="margin-top:20px;" onclick="confirmSetup(${count})">次へ：ルール確認</button>`;
   document.getElementById("setup-content").innerHTML = html;
 }
 
 function confirmSetup(count) {
   players = [];
-  const emojis = ["🎾","🎀","💄","🍦","🌸","⭐","🔥","💧","🍀","🌙","☀️","🌈","🐾","🎨"];
   for(let i=0; i<count; i++) {
-    players.push({id:i, name:document.getElementById(`n-${i}`).value, emoji:emojis[i%14], pos:0, money:0, goal:false, trait:traits.find(tr=>tr.id===document.getElementById(`t-${i}`).value), skip:false});
+    players.push({
+      id:i, 
+      name:document.getElementById(`n-${i}`).value, 
+      emoji:document.getElementById(`e-${i}`).value, 
+      pos:0, money:0, goal:false, 
+      trait:traits.find(tr=>tr.id===document.getElementById(`t-${i}`).value), 
+      skip:false
+    });
   }
   showRules();
 }
@@ -133,16 +145,16 @@ function showRules() {
   document.getElementById("setup-content").innerHTML = `
     <h2 style="color:var(--pink); text-align:center;">🎾 ルール説明</h2>
     <div style="font-size:13px; text-align:left; line-height:1.4;">
-      1.ゴール時に一番お金を持っていた人が優勝です！<br>
+      1.ゴール時に一番お金を持っていた人が優勝！<br>
       2.所持金0円からスタートします。<br>
-      3.特性と天気の組み合わせで移動距離にボーナスが付きます。<br>
-      4.サイコロを振るたびに天気が変わります。<br>
-      5.連帯責任で全員からお金が引かれるマスがあります。<br>
-      6.赤い枠は一回休みです。<br>
-      7.所持金マイナス時は「闇取引」で救済あり。断ってもサイコロを振れます。<br>
-      8.「下剋上」ボタンで1位と位置を交代できます。<br>
-      9.ボーナスマスはルーレットです。<br>
-      10.引退式はふわっと表示されます。
+      3.特性と天気の相性で移動距離ボーナスあり。<br>
+      4.サイコロ時に天気が変動します。<br>
+      5.連帯責任（全員罰金）マスに注意！<br>
+      6.赤枠は一回休みです。<br>
+      7.マイナス時は「闇取引」か「自力」か戦略を選べます。<br>
+      8.闇取引は相手に3000円払い、サイコロ4以上で3マス進めます。<br>
+      9.「下剋上」でエースと入れ替えを狙えます。<br>
+      10.引退式で結果発表！
     </div>
     <div style="text-align:center; margin:10px 0;">
       <small>【部内ランクの仕組み】</small><br>
@@ -181,26 +193,19 @@ function updateStatus() {
       <b>${p.emoji}${p.name}</b><br>💰${p.money.toLocaleString()}
     </div>`;
   }).join("");
-  
   document.getElementById("revolt-btn").style.display = (players[turn]!==sorted[0] && !players[turn].goal)?"block":"none";
-
   const activeCard = document.getElementById(`card-${turn}`);
-  if (activeCard) {
-    const sidebar = document.getElementById("sidebar");
-    sidebar.scrollTop = activeCard.offsetTop - sidebar.offsetTop - 10;
-  }
+  if (activeCard) document.getElementById("sidebar").scrollTop = activeCard.offsetTop - 20;
 }
 
 function rollDice() {
   if(isMoving || players[turn].goal) return;
   if(players[turn].money < 0) { triggerTradeUI(); return; }
-  
   if(players[turn].skip) {
     players[turn].skip = false;
     showEvent(players[turn], "休み明け", "部活に復帰した！");
     return;
   }
-  
   startDiceRoll();
 }
 
@@ -208,7 +213,6 @@ function startDiceRoll() {
   isMoving = true; document.getElementById("diceBtn").disabled = true;
   currentWeather = weathers[Math.floor(Math.random()*weathers.length)];
   document.getElementById("weather-display").innerText = currentWeather.n;
-
   let count = 0;
   const timer = setInterval(() => {
     document.getElementById("diceNum").innerText = "🎲 " + (Math.floor(Math.random()*6)+1);
@@ -217,9 +221,7 @@ function startDiceRoll() {
       let dice = Math.floor(Math.random()*6)+1;
       let bonus = players[turn].trait.bonus(players[turn], currentWeather);
       let totalSteps = dice + bonus;
-      let msg = `🎲 ${dice}`;
-      if(bonus > 0) msg += ` + 特性ボーナス ${bonus}`;
-      document.getElementById("diceNum").innerText = msg;
+      document.getElementById("diceNum").innerText = `🎲 ${dice}${bonus > 0 ? ' + ボーナス '+bonus : ''}`;
       setTimeout(() => movePlayer(totalSteps), 800);
     }
   }, 60);
@@ -247,11 +249,68 @@ function showEvent(p, title, text) {
 function closeEvent() {
   document.getElementById("event-overlay").style.display = "none";
   document.getElementById("trade-ui").style.display = "none";
-  document.getElementById("gekokujo-roll").style.display = "none";
+  document.getElementById("game-dice-roll").style.display = "none";
   if(players[turn].pos === squares.length-1) players[turn].goal = true;
   isMoving = false; document.getElementById("diceBtn").disabled = false;
   if(players.every(pl => pl.goal)) showResults();
   else { do { turn = (turn + 1) % players.length; } while(players[turn].goal); updateStatus(); }
+}
+
+function triggerTradeUI() {
+  const p = players[turn];
+  const others = players.filter(t => t !== p);
+  const sel = document.getElementById("trade-target-select");
+  sel.innerHTML = others.map(t => `<option value="${t.id}">${t.emoji} ${t.name}</option>`).join("");
+  document.getElementById("trade-ui").style.display = "block";
+  document.getElementById("ev-close").style.display = "none";
+  showEvent(p, "闇取引の誘い", "相手に3000円払い、サイコロ4以上で3マス進む？<br><small>失敗したら罰金3000円！</small>");
+}
+
+function executeTradeRoll() {
+  const p = players[turn]; const tid = document.getElementById("trade-target-select").value;
+  document.getElementById("trade-ui").style.display = "none";
+  document.getElementById("game-dice-roll").style.display = "block";
+  let c = 0; const t = setInterval(() => {
+    document.getElementById("game-dice-roll").innerText = "🎲 " + (Math.floor(Math.random()*6)+1);
+    if(++c > 12) {
+      clearInterval(t); const res = Math.floor(Math.random()*6)+1;
+      document.getElementById("game-dice-roll").innerText = "🎲 " + res;
+      setTimeout(() => {
+        if(res >= 4) {
+          p.money -= 3000; players[tid].money += 3000; p.pos = Math.min(squares.length-1, p.pos + 3);
+          showEvent(p, "取引成功✨", "3マス進んだ！"); renderBoard();
+        } else {
+          p.money -= 3000; showEvent(p, "取引失敗💀", "罰金3000円...");
+        }
+        document.getElementById("ev-close").style.display = "inline-block";
+      }, 800);
+    }
+  }, 60);
+}
+
+function refuseTrade() {
+  document.getElementById("event-overlay").style.display = "none";
+  document.getElementById("trade-ui").style.display = "none";
+  startDiceRoll();
+}
+
+function triggerGekokujo() {
+  const p = players[turn], ace = [...players].sort((a,b)=>b.pos - a.pos)[0];
+  document.getElementById("game-dice-roll").style.display = "block";
+  document.getElementById("ev-close").style.display = "none";
+  showEvent(p, "💥 下剋上", `${ace.name}に挑む！`);
+  let c = 0; const t = setInterval(() => {
+    document.getElementById("game-dice-roll").innerText = `🎲 ${Math.floor(Math.random()*6)+1} VS 🎲 ${Math.floor(Math.random()*6)+1}`;
+    if(++c > 15) {
+      clearInterval(t); const r1 = Math.floor(Math.random()*6)+1, r2 = Math.floor(Math.random()*6)+1;
+      document.getElementById("game-dice-roll").innerText = `🎲 ${r1} VS ${r2}`;
+      setTimeout(() => {
+        if(r1 > r2) { [p.pos, ace.pos] = [ace.pos, p.pos]; showEvent(p, "成功すごいじゃーん✨️", "位置を交代！"); }
+        else { p.money -= 3000; showEvent(p, "失敗どんまーい😁", "罰金3000円"); }
+        renderBoard(); document.getElementById("ev-close").style.display = "inline-block";
+      }, 800);
+    }
+  }, 60);
 }
 
 function startRoulette() {
@@ -266,48 +325,6 @@ function stopRoulette() {
   players[turn].money += parseInt(document.getElementById("ev-text").innerText.match(/\d+/) || 0);
   document.getElementById("roulette-stop").style.display = "none";
   document.getElementById("ev-close").style.display = "inline-block";
-}
-
-function triggerTradeUI() {
-  const p = players[turn];
-  const others = players.filter(t => t !== p); // 自分以外の全員を表示
-  const sel = document.getElementById("trade-target-select");
-  sel.innerHTML = others.map(t => `<option value="${t.id}">${t.emoji} ${t.name}</option>`).join("");
-  document.getElementById("trade-ui").style.display = "block";
-  document.getElementById("ev-close").style.display = "none";
-  showEvent(p, "闇取引", "3000円で3マス進む？<br><small>借金中のため救済措置です</small>");
-}
-
-function executeTrade() {
-  const p = players[turn]; const tid = document.getElementById("trade-target-select").value;
-  p.money -= 3000; players[tid].money += 3000;
-  p.pos = Math.min(squares.length-1, p.pos + 3); renderBoard(); closeEvent();
-}
-
-function refuseTrade() {
-  document.getElementById("event-overlay").style.display = "none";
-  document.getElementById("trade-ui").style.display = "none";
-  startDiceRoll(); // 断った後にサイコロを振る
-}
-
-function triggerGekokujo() {
-  const p = players[turn], ace = [...players].sort((a,b)=>b.pos - a.pos)[0];
-  document.getElementById("gekokujo-roll").style.display = "block";
-  document.getElementById("ev-close").style.display = "none";
-  showEvent(p, "💥 下剋上", `${ace.name}に挑む！`);
-  let c = 0; const t = setInterval(() => {
-    document.getElementById("gekokujo-roll").innerText = `🎲 ${Math.floor(Math.random()*6)+1} VS 🎲 ${Math.floor(Math.random()*6)+1}`;
-    if(++c > 15) {
-      clearInterval(t); const r1 = Math.floor(Math.random()*6)+1, r2 = Math.floor(Math.random()*6)+1;
-      document.getElementById("gekokujo-roll").innerText = `🎲 ${r1} VS ${r2}`;
-      setTimeout(() => {
-        if(r1 > r2) { [p.pos, ace.pos] = [ace.pos, p.pos]; showEvent(p, "成功すごいじゃーん✨️", "位置を交代！"); }
-        else { p.money -= 3000; showEvent(p, "失敗　どんまーい😁切り替えましょうね！", "罰金3000円"); }
-        renderBoard();
-        document.getElementById("ev-close").style.display = "inline-block";
-      }, 800);
-    }
-  }, 60);
 }
 
 function showResults() {
