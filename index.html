@@ -236,7 +236,7 @@ function movePlayer(steps) {
   if(s.t === "reward") startRoulette();
   else if(s.taxAll) {
     players.forEach(pl => { if(!pl.goal) pl.money -= 3000; });
-    sounds.lose(); showEvent(p, "連帯責任", s.txt + "<br>全員-3,000円");
+    sounds.lose(); showEvent(p, "お前ら全員、連帯責任じゃ！", s.txt + "<br>全員-3,000円");
   } else {
     p.money += s.m; if(s.m > 0) sounds.win(); else if(s.m < 0) sounds.lose();
     if(s.skip) p.skip = true;
@@ -265,7 +265,7 @@ function startRoulette() {
   document.getElementById("event-overlay").style.display = "flex";
   document.getElementById("roulette-stop").style.display = "inline-block";
   document.getElementById("ev-close").style.display = "none";
-  const prizes = ["💰5000円", "💰2000円", "💰10000円", "🍭お菓子", "🍪お菓子", "🍫お菓子"];
+  const prizes = ["💰5000円", "💰2000円", "💰10000円", "お菓子", "お菓子", "お菓子"];
   rouletteTimer = setInterval(() => { sounds.dice(); document.getElementById("ev-text").innerText = prizes[Math.floor(Math.random()*prizes.length)]; }, 50);
 }
 
@@ -293,7 +293,7 @@ function executeTrade() {
     p.money -= 3000; if(tid !== "og") players[tid].money += 3000;
     p.pos = Math.min(squares.length-1, p.pos + 3); sounds.win(); showEvent(p, "成功", "3マス前進！"); renderBoard();
   } else {
-    p.money -= 5000; p.skip = true; sounds.lose(); showEvent(p, "顧問バレ", "罰金と1回休み。");
+    p.money -= 5000; p.skip = true; sounds.lose(); showEvent(p, "顧問バレ　なんしょん、そんなことどうでもいいけん練習せーや", "罰金と1回休み。");
   }
 }
 
@@ -308,8 +308,8 @@ function triggerGekokujo() {
       clearInterval(t); const r1 = Math.floor(Math.random()*6)+1, r2 = Math.floor(Math.random()*6)+1;
       document.getElementById("gekokujo-roll").innerText = `🎲 ${r1} VS 🎲 ${r2}`;
       setTimeout(() => {
-        if(r1 > r2) { const tmp = p.pos; p.pos = ace.pos; ace.pos = tmp; p.money += 5000; sounds.win(); showEvent(p, "勝利！", "位置を交代！"); renderBoard(); }
-        else { p.money -= 3000; sounds.lose(); showEvent(p, "敗北", "罰金3,000円。"); }
+        if(r1 > r2) { const tmp = p.pos; p.pos = ace.pos; ace.pos = tmp; p.money += 5000; sounds.win(); showEvent(p, "勝利！すごいじゃーん！よく頑張ったね！", "位置を交代！"); renderBoard(); }
+        else { p.money -= 3000; sounds.lose(); showEvent(p, "敗北　どんまーい😁次よつぎ！ね！", "罰金3,000円。"); }
         document.getElementById("ev-close").style.display = "inline-block";
       }, 500);
     }
