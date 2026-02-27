@@ -2,9 +2,9 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>テニス部人生ゲーム：絵文字完全復元版</title>
+<title>テニス部人生ゲーム：真・完全復活版</title>
 <style>
-  :root { --green: #2e8b57; --gold: #ffd700; --red: #e74c3c; --dark: #1a1a1a; }
+  :root { --green: #2e8b57; --gold: #ffd700; --red: #e74c3c; --dark: #1a1a1a; --blue: #3498db; }
   body { margin: 0; overflow: hidden; font-family: sans-serif; background: var(--dark); color: #333; }
   .main-container { display: flex; height: 100vh; padding: 10px; box-sizing: border-box; gap: 10px; }
   
@@ -13,6 +13,8 @@
   
   button.big-btn { font-size: 18px; padding: 12px 30px; border-radius: 50px; background: var(--green); color: white; cursor: pointer; border: none; font-weight: bold; box-shadow: 0 4px 0 #1b5e38; transition: 0.1s; margin: 5px; }
   button.big-btn:active { transform: translateY(2px); box-shadow: none; }
+  button.warn-btn { background: var(--red); box-shadow: 0 4px 0 #900; }
+  button.dark-btn { background: #444; box-shadow: 0 4px 0 #222; }
 
   #sidebar { flex: 0 0 260px; background: rgba(255,255,255,0.9); border-radius: 15px; padding: 10px; display: flex; flex-direction: column; overflow: hidden; }
   #statusArea { overflow-y: auto; flex-grow: 1; }
@@ -23,10 +25,8 @@
   .square { background: var(--green); border: 1px solid rgba(255,255,255,0.3); border-radius: 6px; color: white; padding: 4px; font-size: 10px; position: relative; display: flex; flex-direction: column; justify-content: space-between; }
   .token-emoji { font-size: 26px; filter: drop-shadow(1px 1px 1px rgba(0,0,0,0.5)); display: inline-block; transition: 0.3s; }
 
-  .setup-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; }
-  .setup-item { background: #f0f0f0; padding: 10px; border-radius: 10px; text-align: left; }
-  .setup-item input { width: 45px; }
-  .setup-item input.name-in { width: 80px; }
+  .setup-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+  .setup-item { background: #f0f0f0; padding: 10px; border-radius: 10px; text-align: left; border: 1px solid #ccc; }
 </style>
 </head>
 <body>
@@ -61,9 +61,12 @@
       <div id="weather-ui" style="font-size:22px; font-weight:bold;">☀️ 晴れ</div>
       <div style="text-align:center;">
         <div id="diceNum" style="font-size:60px; font-weight:bold; color:var(--green);">🎲</div>
-        <div id="bonus-desc" style="font-size:12px; height:15px; color:var(--red);"></div>
+        <div id="bonus-desc" style="font-size:12px; height:15px; color:var(--red); font-weight:bold;"></div>
       </div>
-      <button id="diceBtn" class="big-btn" onclick="rollDice()">サイコロを振る</button>
+      <div id="control-panel">
+        <button id="diceBtn" class="big-btn" onclick="rollDice()">サイコロ</button>
+        <button id="tradeBtn" class="big-btn dark-btn" onclick="triggerTrade()" style="display:none;">闇取引</button>
+      </div>
     </div>
     <div id="board"></div>
   </div>
@@ -71,38 +74,52 @@
 
 <script>
 const traits = [
-    {id:"none", n:"普通の部員"},
-    {id:"fav", n:"顧問の愛弟子"},
-    {id:"sun", n:"晴れ男/女"},
-    {id:"wind", n:"追い風マスタ"},
-    {id:"strong", n:"雑草魂"}
+    {id:"none", n:"普通の部員", d:"特になし"},
+    {id:"fav", n:"顧問の愛弟子", d:"部費徴収を免除"},
+    {id:"sun", n:"晴れ男/女", d:"晴れの時サイコロ+1"},
+    {id:"wind", n:"追い風マスタ", d:"強風の時サイコロ+1"},
+    {id:"strong", n:"雑草魂", d:"雨の影響なし＆支払い半分"}
 ];
-const squares = [{t:"start", txt:"集合"}, {t:"normal", txt:"ラケット破損", m:-4000}, {t:"normal", txt:"部室掃除", m:500}, {t:"reward", txt:"😁"}, {t:"normal", txt:"遠征", m:-2000}, {t:"normal", txt:"練習試合勝利", m:5000}, {t:"normal", txt:"ガット切れ", m:-2500}, {t:"reward", txt:"😁"}, {t:"normal", txt:"エース覚醒", m:8000}, {t:"goal", txt:"引退"}];
+const squares = [
+    {t:"start", txt:"集合"}, {t:"normal", txt:"ラケバ忘れた", m:-3000}, {t:"normal", txt:"部室掃除", m:500}, 
+    {t:"reward", txt:"😁"}, {t:"normal", txt:"遠征試合", m:-2000}, {t:"normal", txt:"勝利報酬", m:5000}, 
+    {t:"normal", txt:"ガット張替", m:-2500}, {t:"reward", txt:"😁"}, {t:"normal", txt:"エース覚醒", m:8000}, 
+    {t:"normal", txt:"他校と交流", m:1000}, {t:"reward", txt:"😁"}, {t:"goal", txt:"引退"}
+];
 const weathers = [{n:"晴れ", i:"☀️"}, {n:"雨", i:"☔"}, {n:"強風", i:"🌀"}];
 
 let players = [], turn = 0, weatherIdx = 0, globalTurn = 0, isRolling = false;
 
+// 1. 入力画面生成
 function showSetup() {
-    const count = document.getElementById("p-count").value;
-    let html = '<div class="setup-grid">';
+    const val = document.getElementById("p-count").value;
+    const count = parseInt(val); // ここで確実に数値化
+    if(isNaN(count) || count < 1) return alert("正しい人数を入れてね");
+
+    let html = '<p>各部員の設定をしてね</p><div class="setup-grid">';
     for(let i=1; i<=count; i++) {
         html += `<div class="setup-item">
-            #${i} <input id="n-${i}" class="name-in" placeholder="名前"> 
-            <input id="e-${i}" placeholder="絵文字" value="🎾">
-            <select id="t-${i}">${traits.map(t=>`<option value="${t.id}">${t.n}</option>`).join("")}</select>
+            <b>部員 #${i}</b><br>
+            名: <input id="n-${i}" style="width:70px;" value="部員${i}"> 
+            絵: <input id="e-${i}" style="width:30px;" value="🎾"><br>
+            特性: <select id="t-${i}">${traits.map(t=>`<option value="${t.id}">${t.n}</option>`).join("")}</select>
         </div>`;
     }
-    html += '</div><button class="big-btn" onclick="initGame()">試合開始！</button>';
+    html += `</div><button class="big-btn" onclick="initGame(${count})">この名簿で試合開始！</button>`;
     document.getElementById("flow-content").innerHTML = html;
 }
 
-function initGame() {
-    const count = document.getElementById("p-count").value;
+// 2. ゲーム開始処理
+function initGame(count) {
+    players = [];
     for(let i=1; i<=count; i++) {
+        const name = document.getElementById(`n-${i}`).value;
+        const emoji = document.getElementById(`e-${i}`).value;
+        const traitId = document.getElementById(`t-${i}`).value;
         players.push({
-            name: document.getElementById(`n-${i}`).value || `部員${i}`,
-            emoji: document.getElementById(`e-${i}`).value || "🎾",
-            trait: traits.find(t=>t.id===document.getElementById(`t-${i}`).value),
+            name: name || `部員${i}`,
+            emoji: emoji || "🎾",
+            trait: traits.find(t=>t.id === traitId),
             pos: 0, money: 5000, goal: false
         });
     }
@@ -110,6 +127,7 @@ function initGame() {
     render();
 }
 
+// メッセージ表示
 function showMsg(title, icon, body, cb) {
     document.getElementById("msg-title").innerText = title;
     document.getElementById("msg-player-icon").innerText = icon;
@@ -122,6 +140,7 @@ function hideMsg() {
     if(window._cb) window._cb();
 }
 
+// サイコロ処理
 function rollDice() {
     if(isRolling) return; isRolling = true;
     const p = players[turn];
@@ -138,11 +157,11 @@ function rollDice() {
             let final = base;
             let w = weathers[weatherIdx].n;
             
-            if(w==="晴れ" && p.trait.id==="sun") { final++; bonusDiv.innerText = "特性ボーナス +1"; }
-            if(w==="強風" && p.trait.id==="wind") { final++; bonusDiv.innerText = "特性ボーナス +1"; }
+            if(w==="晴れ" && p.trait.id==="sun") { final++; bonusDiv.innerText = "☀️特性ボーナス +1"; }
+            if(w==="強風" && p.trait.id==="wind") { final++; bonusDiv.innerText = "🌀特性ボーナス +1"; }
             if(w==="雨") {
-                if(p.trait.id!=="strong") { final = Math.max(1, final-1); bonusDiv.innerText = "雨の減速 -1"; }
-                else { bonusDiv.innerText = "雑草魂で減速なし！"; }
+                if(p.trait.id!=="strong") { final = Math.max(1, final-1); bonusDiv.innerText = "☔雨の減速 -1"; }
+                else { bonusDiv.innerText = "🌿雑草魂で減速なし！"; }
             }
 
             diceDiv.innerHTML = `${["⚀","⚁","⚂","⚃","⚄","⚅"][base-1]} <span style="font-size:75px;">${final}</span>`;
@@ -164,28 +183,66 @@ function move(s) {
             let amt = (sq.m < 0 && p.trait.id === "strong") ? Math.floor(sq.m/2) : sq.m;
             p.money += amt;
             showMsg(amt>0?"👍 ナイス！":"👎 事件...", p.emoji, `${sq.txt}<br>${amt}円`, endTurn);
+        } else if(sq.t === "goal") {
+            p.goal = true; p.money += 10000;
+            showMsg("🏅 引退！", p.emoji, `${p.name}がゴール（引退）しました！お疲れ様！`, endTurn);
         } else { endTurn(); }
     }, 400);
 }
 
+function triggerTrade() {
+    const p = players[turn];
+    const targetName = prompt("誰に賄賂を渡して3マス進みますか？（名前を入力）");
+    const target = players.find(x => x.name === targetName);
+    if(!target || target === p) return alert("相手が見つかりません");
+    p.money -= 3000; target.money += 3000; p.pos = Math.min(squares.length-1, p.pos + 3);
+    showMsg("🕶 闇取引成立", "💰", `${target.name}に3000円を渡して、無理やり3マス進みました。`, render);
+}
+
 function endTurn() {
     globalTurn++;
+    // 部費徴収（10ターンごと）
     if(globalTurn % 10 === 0) {
-        let victims = players.filter(pl => !pl.goal && pl.trait.id !== "fav").map(pl => { pl.money -= 2000; return pl.emoji + pl.name; });
-        showMsg("💰 部費徴収！", "💸", `徴収(-2000円):<br>${victims.join("<br>")}`, nextP);
-    } else if(globalTurn % 3 === 0) {
+        let victims = [];
+        let favs = [];
+        players.forEach(pl => {
+            if(pl.goal) return;
+            if(pl.trait.id === "fav") { favs.push(pl.emoji + pl.name); }
+            else { pl.money -= 2000; victims.push(pl.emoji + pl.name); }
+        });
+        let msg = `<b>💸 徴収（-2000円）:</b><br>${victims.join(", ") || "なし"}`;
+        if(favs.length) msg += `<br><br><b>✨ 免除（顧問の愛弟子）:</b><br>${favs.join(", ")}`;
+        showMsg("💰 恐怖の部費徴収タイム", "💸", msg, checkWeather);
+    } else {
+        checkWeather();
+    }
+}
+
+function checkWeather() {
+    // 天候変化（3ターンごと）
+    if(globalTurn % 3 === 0) {
         weatherIdx = (weatherIdx + 1) % weathers.length;
         const w = weathers[weatherIdx];
-        showMsg(`${w.i} 天候変化`, w.i, `天気が「${w.n}」に変わりました！`, nextP);
-    } else { nextP(); }
+        showMsg(`${w.i} 天候が変わった！`, w.i, `これからの天気：<b>${w.n}</b><br>特性に影響が出るぞ！`, nextP);
+    } else {
+        nextP();
+    }
 }
 
 function nextP() {
     isRolling = false;
+    if(players.every(pl => pl.goal)) {
+        let ranking = [...players].sort((a,b)=>b.money - a.money);
+        let list = ranking.map((p,i)=>`${i+1}位: ${p.emoji}${p.name} (💰${p.money}円)`).join("<br>");
+        showMsg("🏆 最終結果", "🎾", list, () => location.reload());
+        return;
+    }
     do { turn = (turn + 1) % players.length; } while(players[turn].goal);
+    
     document.getElementById("weather-ui").innerText = weathers[weatherIdx].i + " " + weathers[weatherIdx].n;
     document.getElementById("diceNum").innerText = "🎲";
     document.getElementById("bonus-desc").innerText = "";
+    document.getElementById("tradeBtn").style.display = (players[turn].money < 0) ? "inline-block" : "none";
     render();
 }
 
@@ -193,15 +250,16 @@ function render() {
     document.getElementById("statusArea").innerHTML = players.map((p,i) => `
         <div class="money-card ${i===turn?'active-p':''}">
             <span style="font-size:24px;">${p.emoji}</span> <b>${p.name}</b><br>
-            💰 ${p.money}円 <small>(${p.trait.n})</small>
+            💰 ${p.money}円 <br><small>特性: ${p.trait.n}</small>
         </div>`).join("");
     const b = document.getElementById("board"); b.innerHTML = "";
     squares.forEach((s,i) => {
-        b.innerHTML += `<div class="square"><small>${i}</small><b>${s.txt}</b><div id="p-box-${i}"></div></div>`;
+        b.innerHTML += `<div class="square" id="sq-${i}"><small>${i}</small><b>${s.txt}</b><div id="p-box-${i}"></div></div>`;
     });
     players.forEach(p => {
         const span = document.createElement("span"); span.className="token-emoji"; span.innerText=p.emoji;
-        document.getElementById(`p-box-${p.pos}`).appendChild(span);
+        const box = document.getElementById(`p-box-${p.pos}`);
+        if(box) box.appendChild(span);
     });
 }
 </script>
