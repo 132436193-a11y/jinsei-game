@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>女子テニス部人生ゲーム　祝卒業🌸</title>
+<title>女子テニス部人生ゲーム：祝卒業🌸</title>
 <style>
   :root { --green: #2e8b57; --gold: #ffd700; --red: #e74c3c; --dark: #1a1a1a; --pink: #ff69b4; }
   body { margin: 0; overflow: hidden; font-family: sans-serif; background: var(--dark); color: #333; }
@@ -87,8 +87,14 @@
 </div>
 
 <script>
-let players = [], turn = 0, isMoving = false, rouletteTimer = null;
-const traits = [{id:"fav", n:"顧問の愛弟子"}, {id:"sun", n:"晴れ女"}, {id:"wind", n:"追い風マスタ"}, {id:"strong", n:"雑草魂"}, {id:"none", n:"普通の部員"}];
+let players = [], turn = 0, isMoving = false, rouletteTimer = null, currentWeather = {id:"sunny", n:"☀️ 晴れ"};
+const traits = [
+  {id:"fav", n:"顧問の愛弟子", bonus: (p, w) => 1},
+  {id:"sun", n:"晴れ女", bonus: (p, w) => w.id === "sunny" ? 2 : 0},
+  {id:"wind", n:"追い風マスタ", bonus: (p, w) => w.id === "windy" ? 2 : 0},
+  {id:"strong", n:"雑草魂", bonus: (p, w) => w.id === "rainy" ? 2 : 0},
+  {id:"none", n:"普通の部員", bonus: (p, w) => 0}
+];
 const weathers = [{id:"sunny", n:"☀️ 晴れ"}, {id:"rainy", n:"☔ 豪雨"}, {id:"windy", n:"🍃 追い風"}];
 
 const squares = [
@@ -118,7 +124,7 @@ function confirmSetup(count) {
   players = [];
   const emojis = ["🎾","🎀","💄","🍦","🌸","⭐","🔥","💧","🍀","🌙","☀️","🌈","🐾","🎨"];
   for(let i=0; i<count; i++) {
-    players.push({id:i, name:document.getElementById(`n-${i}`).value, emoji:emojis[i%14], pos:0, money:10000, goal:false, trait:traits.find(tr=>tr.id===document.getElementById(`t-${i}`).value), skip:false});
+    players.push({id:i, name:document.getElementById(`n-${i}`).value, emoji:emojis[i%14], pos:0, money:0, goal:false, trait:traits.find(tr=>tr.id===document.getElementById(`t-${i}`).value), skip:false});
   }
   showRules();
 }
@@ -127,7 +133,16 @@ function showRules() {
   document.getElementById("setup-content").innerHTML = `
     <h2 style="color:var(--pink); text-align:center;">🎾 ルール説明</h2>
     <div style="font-size:13px; text-align:left; line-height:1.4;">
-      1.ゴール時にお金持ちが勝ち 2.1万円スタート 3.特性で移動変化 4.毎ターン天気が変化 5.連帯責任あり 6.赤枠は一回休み 7.闇取引は断っても振れる 8.下剋上でエースと交代 9.ボーナスはルーレット 10.結果はふわっと出ます
+      1.ゴール時に一番お金を持っていた人が優勝です！<br>
+      2.所持金0円からスタートします。<br>
+      3.特性と天気の組み合わせで移動距離にボーナスが付きます。<br>
+      4.サイコロを振るたびに天気が変わります。<br>
+      5.連帯責任で全員からお金が引かれるマスがあります。<br>
+      6.赤い枠は一回休みです。<br>
+      7.所持金マイナス時は「闇取引」で救済あり。<br>
+      8.「下剋上」ボタンで1位と位置を交代できます。<br>
+      9.ボーナスマスはルーレットです。<br>
+      10.引退式はふわっと表示されます。
     </div>
     <div style="text-align:center; margin:10px 0;">
       <small>【部内ランクの仕組み】</small><br>
@@ -187,14 +202,27 @@ function rollDice() {
   }
   
   isMoving = true; document.getElementById("diceBtn").disabled = true;
+  
+  // 天気の自動変更（確認ボタンなし）
+  currentWeather = weathers[Math.floor(Math.random()*weathers.length)];
+  document.getElementById("weather-display").innerText = currentWeather.n;
+
   let count = 0;
   const timer = setInterval(() => {
     document.getElementById("diceNum").innerText = "🎲 " + (Math.floor(Math.random()*6)+1);
     if(++count > 10) {
       clearInterval(timer);
       let dice = Math.floor(Math.random()*6)+1;
-      document.getElementById("diceNum").innerText = "🎲 " + dice;
-      setTimeout(() => movePlayer(dice), 500);
+      
+      // 特性と天気のボーナス計算
+      let bonus = players[turn].trait.bonus(players[turn], currentWeather);
+      let totalSteps = dice + bonus;
+      
+      let msg = `🎲 ${dice}`;
+      if(bonus > 0) msg += ` + 特性ボーナス ${bonus}`;
+      document.getElementById("diceNum").innerText = msg;
+      
+      setTimeout(() => movePlayer(totalSteps), 800);
     }
   }, 60);
 }
@@ -267,9 +295,9 @@ function triggerGekokujo() {
     document.getElementById("gekokujo-roll").innerText = `🎲 ${Math.floor(Math.random()*6)+1} VS 🎲 ${Math.floor(Math.random()*6)+1}`;
     if(++c > 15) {
       clearInterval(t); const r1 = Math.floor(Math.random()*6)+1, r2 = Math.floor(Math.random()*6)+1;
-      document.getElementById("gekokujo-roll").innerText = `🎲 ${r1} VS 🎲 ${r2}`;
+      document.getElementById("gekokujo-roll").innerText = `🎲 ${r1} VS ${r2}`;
       setTimeout(() => {
-        if(r1 > r2) { [p.pos, ace.pos] = [ace.pos, p.pos]; showEvent(p, "成功"すごいじゃーん✨️, "位置を交代！"); }
+        if(r1 > r2) { [p.pos, ace.pos] = [ace.pos, p.pos]; showEvent(p, "成功すごいじゃーん✨️", "位置を交代！"); }
         else { p.money -= 3000; showEvent(p, "失敗　どんまーい😁切り替えましょうね！", "罰金3000円"); }
         renderBoard();
         document.getElementById("ev-close").style.display = "inline-block";
