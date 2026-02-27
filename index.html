@@ -2,9 +2,9 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>女子テニス部人生ゲーム：祝卒業🌸</title>
+<title>女子テニス部人生ゲーム：ハプニング・ダブルス🌸</title>
 <style>
-  :root { --green: #2e8b57; --gold: #ffd700; --red: #e74c3c; --dark: #1a1a1a; --pink: #ff69b4; }
+  :root { --green: #2e8b57; --gold: #ffd700; --red: #e74c3c; --dark: #1a1a1a; --pink: #ff69b4; --cyan: #00ced1; }
   body { margin: 0; overflow: hidden; font-family: sans-serif; background: var(--dark); color: #333; }
   .main-container { display: flex; height: 100vh; padding: 5px; box-sizing: border-box; gap: 5px; }
   
@@ -13,24 +13,26 @@
   
   .money-card { padding: 6px; border-radius: 8px; background: #fff; border: 2px solid #ddd; position: relative; overflow: hidden; font-size: 11px; transition: 0.3s; }
   .active-p { border-color: var(--pink); background: #fff5f8; transform: scale(1.02); z-index: 2; box-shadow: 0 0 10px rgba(255,105,180,0.3); }
-  .skip-label { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(231, 76, 60, 0.6); color: white; display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 14px; z-index: 5; }
+  
+  /* ペア時のスタイル */
+  .paired-status { border: 2px solid var(--cyan) !important; background: #e0ffff !important; }
+  .pair-badge { background: var(--cyan); color: white; font-size: 10px; padding: 2px 5px; border-radius: 10px; font-weight: bold; display: block; margin-top: 3px; text-align: center; }
 
   #game-area { flex: 1; display: flex; flex-direction: column; gap: 5px; }
   #board { display: grid; grid-template-columns: repeat(8, 1fr); grid-template-rows: repeat(4, 1fr); gap: 4px; flex-grow: 1; }
   .square { background: var(--green); border: 1px solid white; border-radius: 6px; color: white; padding: 4px; font-size: 10px; position: relative; }
   .type-reward { background: var(--gold) !important; color: #333 !important; }
+  .type-special { background: #ff1493 !important; animation: blink 2s infinite; }
+  @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.8; } }
 
-  .token-emoji { font-size: 20px; position: absolute; z-index: 10; animation: bounce 1s infinite; transition: 0.5s; }
+  .token-emoji { font-size: 20px; position: absolute; z-index: 10; animation: bounce 1s infinite; transition: 0.5s; text-align: center; }
+  .token-name { font-size: 8px; background: rgba(255,255,255,0.8); color: black; padding: 1px 2px; border-radius: 3px; display: block; white-space: nowrap; }
   @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
 
   .full-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: none; justify-content: center; align-items: center; z-index: 9999; background: rgba(0,0,0,0.8); flex-direction: column; }
   .event-card { background: white; padding: 30px; border-radius: 20px; width: 80%; max-width: 500px; border: 8px solid var(--pink); text-align: center; }
 
-  #result-overlay { opacity: 0; display: none; animation: fuwatto 2.5s ease-out forwards; }
-  @keyframes fuwatto { from { opacity: 0; transform: translateY(50px); } to { opacity: 1; transform: translateY(0); } }
   button.big-btn { padding: 12px 30px; font-size: 18px; background: var(--pink); color: white; border: none; border-radius: 30px; cursor: pointer; font-weight: bold; margin: 5px; }
-  
-  .pyramid { font-family: monospace; white-space: pre; line-height: 1.2; background: #eee; padding: 10px; border-radius: 10px; display: inline-block; text-align: center; }
 </style>
 </head>
 <body>
@@ -39,7 +41,7 @@
   <div class="scroll-card" id="setup-content" style="background:white; padding:30px; border-radius:30px; max-width:800px; width:90%; color:#333; overflow-y:auto; max-height:90vh;">
     <h1 style="color:var(--pink); text-align:center;">🎾 女子テニス部人生ゲーム 🎾</h1>
     <div id="initial-screen" style="text-align:center;">
-      人数を入力してください (最大14人): <br>
+      部員数を入力 (最大14人): <br>
       <input type="number" id="p-count" value="4" min="1" max="14" style="font-size:24px; width:80px; text-align:center; margin:15px;">
       <br><button class="big-btn" onclick="generateSetup()">部員登録へ</button>
     </div>
@@ -54,7 +56,7 @@
       相手: <select id="trade-target-select" style="font-size:18px;"></select>
       <br>
       <button class="big-btn" style="background:#444;" onclick="executeTradeRoll()">契約して振る(リスクあり)</button>
-      <button class="big-btn" style="background:#888;" onclick="refuseTrade()">断って普通に振る(堅実)</button>
+      <button class="big-btn" style="background:#888;" onclick="refuseTrade()">断って普通に振る</button>
     </div>
     <div id="game-dice-roll" style="display:none; font-size:40px;">🎲 ?</div>
     <div id="button-area">
@@ -92,24 +94,44 @@ const emojis_list = ["🎾","🎀","💄","🍦","🌸","⭐","🔥","💧","�
 const traits = [
   {id:"fav", n:"顧問の愛弟子", bonus: (p, w) => 1},
   {id:"sun", n:"晴れ女", bonus: (p, w) => w.id === "sunny" ? 2 : 0},
-  {id:"wind", n:"追い風マスタ", bonus: (p, w) => w.id === "windy" ? 2 : 0},
   {id:"strong", n:"雑草魂", bonus: (p, w) => w.id === "rainy" ? 2 : 0},
   {id:"none", n:"普通の部員", bonus: (p, w) => 0}
 ];
 const weathers = [{id:"sunny", n:"☀️ 晴れ"}, {id:"rainy", n:"☔ 豪雨"}, {id:"windy", n:"🍃 追い風"}];
 
 const squares = [
-  {t:"start", txt:"入学！", m:0}, {t:"normal", txt:"ガット張替え。地味に高いんだyo", m:-2000}, {t:"normal", txt:"練習し過ぎで疲労骨折。", move:-3, m:-5000},
-  {t:"reward", txt:"😁ボーナス", m:0}, {t:"normal", txt:"おばちゃんから苦情。我慢しろよー", m:-3000, taxAll:true}, {t:"normal", txt:"福田行く途中にチャリパンク。", m:-4000, skip:true},
-  {t:"normal", txt:"スマッシュでラケットふっとばして破壊。", m:-15000}, {t:"normal", txt:"午前授業が始まる。部活が長過ぎる", m:-1000}, {t:"normal", txt:"ラインにつまずいてローリングズッコケ。", m:1000},
-  {t:"normal", txt:"祝！中国大会出場！", move:5, m:10000}, {t:"normal", txt:"試合に向けてお守りをもらう！", move:3, m:2000}, {t:"reward", txt:"😁ボーナス", m:0},
-  {t:"normal", txt:"前髪終了。", move:-1, m:-500}, {t:"normal", txt:"スコアのポイントプラス！", m:3000}, {t:"normal", txt:"雨で部活オフ！", move:2, m:1500},
-  {t:"normal", txt:"靴から無限に砂。", move:-1, m:-200}, {t:"normal", txt:"ボレーミスって顔面にボール直撃。", m:-2000, skip:true}, {t:"reward", txt:"😁ボーナス", m:0},
-  {t:"normal", txt:"先輩から怒られる。", move:-2, m:-1000}, {t:"normal", txt:"顧問機嫌ワルワルモード。", m:-5000}, {t:"normal", txt:"練習中に雪！テンションマックス", move:4, m:2000},
-  {t:"normal", txt:"おしゃべりタイム。", m:1000}, {t:"normal", txt:"調子が絶好調！", move:2, m:3000}, {t:"reward", txt:"😁ボーナス", m:0},
-  {t:"normal", txt:"ボールホルダー忘れ。結構最悪", move:-2, m:-500}, {t:"normal", txt:"応援で喉枯れる。ガラガラだー", m:-1000}, {t:"normal", txt:"日焼け止め塗っても真っ黒！激おこ。", m:-1500},
-  {t:"normal", txt:"汗で服の色変わっちゃった。", move:-1, m:-1000}, {t:"normal", txt:"日に日に増える5分間走。キツすぎー", move:-2, m:-2000}, {t:"normal", txt:"写真写り最悪。しかもブログに上げるとかやめてもらって？", m:-2000},
-  {t:"normal", txt:"日焼け止め忘れたーけど、貸してもらったにょ。ガチサンキュー。", move:6, m:5000}, {t:"goal", txt:"引退", m:10000}
+  {t:"start", txt:"入学！", m:0}, 
+  {t:"normal", txt:"ガット張替え。高っ！", m:-2000}, 
+  {t:"special", txt:"🤝ダブルス結成！誰かと運命共同体", pair:true}, 
+  {t:"reward", txt:"😁ボーナス", m:0}, 
+  {t:"normal", txt:"おばちゃんから苦情。全員罰金！", m:-3000, taxAll:true}, 
+  {t:"normal", txt:"チャリパンク。歩け！", m:-4000, skip:true},
+  {t:"normal", txt:"スマッシュでラケット破壊。", m:-15000}, 
+  {t:"normal", txt:"午前授業が始まる。部活長いっ", m:-1000}, 
+  {t:"special", txt:"💔ダブルス解消！「性格の不一致ｗ」", unpair:true},
+  {t:"normal", txt:"祝！中国大会出場！🎉", move:5, m:10000}, 
+  {t:"normal", txt:"お守りをもらう！", move:3, m:2000}, 
+  {t:"reward", txt:"😁ボーナス", m:0},
+  {t:"normal", txt:"前髪終了。", move:-1, m:-500}, 
+  {t:"special", txt:"🤝ダブルス結成！強制ペアｗ", pair:true},
+  {t:"normal", txt:"雨で部活オフ！", move:2, m:1500},
+  {t:"normal", txt:"靴から無限に砂。", move:-1, m:-200}, 
+  {t:"normal", txt:"ボール直撃。痛っ！", m:-2000, skip:true}, 
+  {t:"reward", txt:"😁ボーナス", m:0},
+  {t:"normal", txt:"先輩から怒られる。しゅん", move:-2, m:-1000}, 
+  {t:"special", txt:"🤝ダブルス結成！", pair:true},
+  {t:"normal", txt:"練習中に雪！テンション爆発", move:4, m:2000},
+  {t:"normal", txt:"おしゃべりタイム。", m:1000}, 
+  {t:"normal", txt:"調子絶好調！", move:2, m:3000}, 
+  {t:"reward", txt:"😁ボーナス", m:0},
+  {t:"normal", txt:"ボールホルダー忘れ。最悪ｗ", move:-2, m:-500}, 
+  {t:"normal", txt:"応援で喉枯れる。", m:-1000}, 
+  {t:"normal", txt:"日焼け止め塗っても真っ黒！", m:-1500},
+  {t:"normal", txt:"汗で服の色が変わった。", move:-1, m:-1000}, 
+  {t:"normal", txt:"5分間走。死ぬｗ", move:-2, m:-2000}, 
+  {t:"normal", txt:"写真写り最悪。", m:-2000},
+  {t:"normal", txt:"日焼け止め、貸してもらった！", move:6, m:5000}, 
+  {t:"goal", txt:"引退", m:10000}
 ];
 
 function generateSetup() {
@@ -122,7 +144,7 @@ function generateSetup() {
       特性:<select id="t-${i}">${traits.map(t=>`<option value="${t.id}">${t.n}</option>`).join("")}</select>
     </div>`;
   }
-  html += `</div><button class="big-btn" style="margin-top:20px;" onclick="confirmSetup(${count})">次へ：ルール確認</button>`;
+  html += `</div><button class="big-btn" style="margin-top:20px;" onclick="confirmSetup(${count})">部活開始！</button>`;
   document.getElementById("setup-content").innerHTML = html;
 }
 
@@ -130,82 +152,40 @@ function confirmSetup(count) {
   players = [];
   for(let i=0; i<count; i++) {
     players.push({
-      id:i, 
-      name:document.getElementById(`n-${i}`).value, 
-      emoji:document.getElementById(`e-${i}`).value, 
-      pos:0, money:0, goal:false, 
-      trait:traits.find(tr=>tr.id===document.getElementById(`t-${i}`).value), 
-      skip:false
+      id:i, name:document.getElementById(`n-${i}`).value, emoji:document.getElementById(`e-${i}`).value, 
+      pos:0, money:0, goal:false, trait:traits.find(tr=>tr.id===document.getElementById(`t-${i}`).value), skip:false, pairWith: null
     });
   }
-  showRules();
+  document.getElementById("start-overlay").style.display="none"; renderBoard(); updateStatus();
 }
-
-function showRules() {
-  document.getElementById("setup-content").innerHTML = `
-    <h2 style="color:var(--pink); text-align:center;">🎾 ルール説明</h2>
-    <div style="font-size:13px; text-align:left; line-height:1.4;">
-      1.ゴール時に一番お金を持っていた人が優勝！<br>
-      2.所持金0円からスタートします。<br>
-      3.特性と天気の相性で移動距離ボーナスあり。<br>
-      4.サイコロ時に天気が変動します。<br>
-      5.連帯責任（全員罰金）マスに注意！<br>
-      6.赤枠は一回休みです。<br>
-      7.マイナス時は「闇取引」か「自力」か戦略を選べます。<br>
-      8.闇取引は相手に3000円払い、サイコロ4以上で3マス進めます。<br>
-      9.「下剋上」でエースと入れ替えを狙えます。<br>
-      10.引退式で結果発表！
-    </div>
-    <div style="text-align:center; margin:10px 0;">
-      <small>【部内ランクの仕組み】</small><br>
-      <div class="pyramid">
-    　　▲
-    　 [エース] (1位)
-    　[正レギュラー] (2-3位)
-     [補欠・玉拾い] (4位以下)
-      </div>
-    </div>
-    <div style="text-align:center;"><button class="big-btn" style="margin-top:5px;" onclick="initGame()">部活開始！</button></div>`;
-}
-
-function initGame() { document.getElementById("start-overlay").style.display="none"; renderBoard(); updateStatus(); }
 
 function renderBoard() {
   const b = document.getElementById("board"); b.innerHTML = "";
   squares.forEach((s, i) => b.innerHTML += `<div class="square type-${s.t}" id="sq-${i}"><small>${i}</small><br><b>${s.txt}</b></div>`);
   players.forEach(p => {
-    const t = document.createElement("span"); t.className = "token-emoji"; t.innerText = p.emoji;
+    const t = document.createElement("div"); t.className = "token-emoji";
+    let partnerInfo = p.pairWith !== null ? `🤝${players[p.pairWith].emoji}` : "";
+    t.innerHTML = `${p.emoji}<span class="token-name">${p.name}${partnerInfo}</span>`;
     document.getElementById(`sq-${p.pos}`).appendChild(t);
-    t.style.left = (p.id * 4) + "px"; t.style.top = (p.id % 2 * 10) + "px";
+    t.style.left = (p.id * 4) + "px"; t.style.top = (p.id % 2 * 12) + "px";
   });
 }
 
 function updateStatus() {
-  const sorted = [...players].sort((a,b)=>b.pos - a.pos);
   const statusArea = document.getElementById("statusArea");
   statusArea.innerHTML = players.map((p, i) => {
-    const rankIdx = sorted.indexOf(p) + 1;
-    let rankName = rankIdx === 1 ? "🏆エース" : (rankIdx <= 3 ? "🥈正ﾚｷﾞｭﾗｰ" : "🌱補欠");
-    return `
-    <div class="money-card ${i===turn?'active-p':''}" id="card-${i}">
-      ${p.skip?'<div class="skip-label">❌ 休み</div>':''}
-      <small>${rankName}</small><br>
-      <b>${p.emoji}${p.name}</b><br>💰${p.money.toLocaleString()}
+    const isPaired = p.pairWith !== null;
+    const pairTag = isPaired ? `<span class="pair-badge">🤝 with ${players[p.pairWith].name}</span>` : "";
+    return `<div class="money-card ${i===turn?'active-p':''} ${isPaired?'paired-status':''}" id="card-${i}">
+      <b>${p.emoji}${p.name}</b><br>💰${p.money.toLocaleString()}${pairTag}
     </div>`;
   }).join("");
-  document.getElementById("revolt-btn").style.display = (players[turn]!==sorted[0] && !players[turn].goal)?"block":"none";
-  const activeCard = document.getElementById(`card-${turn}`);
-  if (activeCard) document.getElementById("sidebar").scrollTop = activeCard.offsetTop - 20;
 }
 
 function rollDice() {
   if(isMoving || players[turn].goal) return;
   if(players[turn].money < 0) { triggerTradeUI(); return; }
-  if(players[turn].skip) {
-    players[turn].skip = false;
-    showEvent(players[turn], "休み明け", "部活に復帰した！");
-    return;
-  }
+  if(players[turn].skip) { players[turn].skip = false; showEvent(players[turn], "復帰", "コートに戻った！「待たせたねｗ」"); return; }
   startDiceRoll();
 }
 
@@ -220,22 +200,46 @@ function startDiceRoll() {
       clearInterval(timer);
       let dice = Math.floor(Math.random()*6)+1;
       let bonus = players[turn].trait.bonus(players[turn], currentWeather);
-      let totalSteps = dice + bonus;
-      document.getElementById("diceNum").innerText = `🎲 ${dice}${bonus > 0 ? ' + ボーナス '+bonus : ''}`;
-      setTimeout(() => movePlayer(totalSteps), 800);
+      document.getElementById("diceNum").innerText = `🎲 ${dice}${bonus > 0 ? ' + '+bonus : ''}`;
+      setTimeout(() => movePlayer(dice + bonus), 800);
     }
   }, 60);
 }
 
 function movePlayer(steps) {
-  let p = players[turn]; p.pos = Math.min(squares.length-1, p.pos + steps);
-  renderBoard(); const s = squares[p.pos];
-  if(s.t === "reward") startRoulette();
-  else if(s.taxAll) { players.forEach(pl => { if(!pl.goal) pl.money -= 3000; }); showEvent(p, "連帯", s.txt+"<br>全員-3000円"); }
-  else {
-    p.money += s.m; if(s.skip) p.skip = true;
+  let p = players[turn]; p.pos = Math.min(squares.length-1, p.pos + steps); renderBoard(); const s = squares[p.pos];
+  
+  if(s.pair) {
+    let others = players.filter(pl => pl.id !== p.id && !pl.goal);
+    if(others.length > 0) {
+      let target = others[Math.floor(Math.random()*others.length)];
+      if(p.pairWith !== null) players[p.pairWith].pairWith = null; // 上書き
+      if(target.pairWith !== null) players[target.pairWith].pairWith = null;
+      p.pairWith = target.id; target.pairWith = p.id;
+      showEvent(p, "🤝 ダブルス結成！", `${target.name}とペアを組んだ！<br>「今日から運命共同体だよｗ」`);
+    }
+  } else if(s.unpair) {
+    if(p.pairWith !== null) {
+      let oldPair = players[p.pairWith];
+      p.pairWith = null; oldPair.pairWith = null;
+      showEvent(p, "💔 ダブルス解消", "一人に戻った。<br>「やっぱり一人が楽だわｗ」");
+    }
+  } else if(s.t === "reward") {
+    startRoulette();
+  } else if(s.taxAll) {
+    players.forEach(pl => { if(!pl.goal) pl.money -= 3000; });
+    showEvent(p, "連帯責任", s.txt+"<br>全員-3000円！");
+  } else {
+    let amount = s.m;
+    if(p.pairWith !== null) {
+      players[p.pairWith].money += amount;
+      showEvent(p, "ペア連動！", s.txt + `<br>💰${amount.toLocaleString()}円<br>（ペアの${players[p.pairWith].name}も同じだけ増減！）`);
+    } else {
+      showEvent(p, "イベント", s.txt + `<br>💰${amount.toLocaleString()}円`);
+    }
+    p.money += amount;
+    if(s.skip) p.skip = true;
     if(s.move) { p.pos = Math.max(0, Math.min(squares.length-1, p.pos+s.move)); setTimeout(renderBoard, 500); }
-    showEvent(p, "移動", s.txt + `<br>💰${s.m.toLocaleString()}円`);
   }
 }
 
@@ -257,30 +261,26 @@ function closeEvent() {
 }
 
 function triggerTradeUI() {
-  const p = players[turn];
-  const others = players.filter(t => t !== p);
+  const p = players[turn]; const others = players.filter(t => t !== p);
   const sel = document.getElementById("trade-target-select");
-  sel.innerHTML = others.map(t => `<option value="${t.id}">${t.emoji} ${t.name}</option>`).join("");
-  document.getElementById("trade-ui").style.display = "block";
-  document.getElementById("ev-close").style.display = "none";
-  showEvent(p, "闇取引の誘い", "相手に3000円払い、サイコロ4以上で3マス進む？<br><small>失敗したら罰金3000円！</small>");
+  sel.innerHTML = others.map(t => `<option value="${t.id}">${t.emoji}${t.name}</option>`).join("");
+  document.getElementById("trade-ui").style.display = "block"; document.getElementById("ev-close").style.display = "none";
+  showEvent(p, "闇取引", "3000円払って、4以上なら3マス進む？<br>「ちょっとお金貸して〜ｗ」");
 }
 
 function executeTradeRoll() {
   const p = players[turn]; const tid = document.getElementById("trade-target-select").value;
-  document.getElementById("trade-ui").style.display = "none";
-  document.getElementById("game-dice-roll").style.display = "block";
+  document.getElementById("trade-ui").style.display = "none"; document.getElementById("game-dice-roll").style.display = "block";
   let c = 0; const t = setInterval(() => {
     document.getElementById("game-dice-roll").innerText = "🎲 " + (Math.floor(Math.random()*6)+1);
     if(++c > 12) {
       clearInterval(t); const res = Math.floor(Math.random()*6)+1;
-      document.getElementById("game-dice-roll").innerText = "🎲 " + res;
       setTimeout(() => {
         if(res >= 4) {
           p.money -= 3000; players[tid].money += 3000; p.pos = Math.min(squares.length-1, p.pos + 3);
-          showEvent(p, "取引成功✨", "3マス進んだ！"); renderBoard();
+          showEvent(p, "大成功✨", "3マス進んだ！「借りたっけ？もらったｗ」"); renderBoard();
         } else {
-          p.money -= 3000; showEvent(p, "取引失敗💀", "罰金3000円...");
+          p.money -= 3000; showEvent(p, "大失敗💀", "罰金…「今のなし！ｗ」");
         }
         document.getElementById("ev-close").style.display = "inline-block";
       }, 800);
@@ -288,25 +288,19 @@ function executeTradeRoll() {
   }, 60);
 }
 
-function refuseTrade() {
-  document.getElementById("event-overlay").style.display = "none";
-  document.getElementById("trade-ui").style.display = "none";
-  startDiceRoll();
-}
+function refuseTrade() { document.getElementById("event-overlay").style.display = "none"; startDiceRoll(); }
 
 function triggerGekokujo() {
   const p = players[turn], ace = [...players].sort((a,b)=>b.pos - a.pos)[0];
-  document.getElementById("game-dice-roll").style.display = "block";
-  document.getElementById("ev-close").style.display = "none";
-  showEvent(p, "💥 下剋上", `${ace.name}に挑む！`);
+  document.getElementById("game-dice-roll").style.display = "block"; document.getElementById("ev-close").style.display = "none";
+  showEvent(p, "💥 下剋上", `${ace.name}に挑戦！<br>「そこ、どいて？ｗ」`);
   let c = 0; const t = setInterval(() => {
     document.getElementById("game-dice-roll").innerText = `🎲 ${Math.floor(Math.random()*6)+1} VS 🎲 ${Math.floor(Math.random()*6)+1}`;
     if(++c > 15) {
       clearInterval(t); const r1 = Math.floor(Math.random()*6)+1, r2 = Math.floor(Math.random()*6)+1;
-      document.getElementById("game-dice-roll").innerText = `🎲 ${r1} VS ${r2}`;
       setTimeout(() => {
-        if(r1 > r2) { [p.pos, ace.pos] = [ace.pos, p.pos]; showEvent(p, "成功すごいじゃーん✨️", "位置を交代！"); }
-        else { p.money -= 3000; showEvent(p, "失敗どんまーい😁", "罰金3000円"); }
+        if(r1 > r2) { [p.pos, ace.pos] = [ace.pos, p.pos]; showEvent(p, "成功✨", "交代！「エースの座、最高〜ｗ」"); }
+        else { p.money -= 3000; showEvent(p, "失敗💀", "罰金…「次、絶対勝つし。」"); }
         renderBoard(); document.getElementById("ev-close").style.display = "inline-block";
       }, 800);
     }
@@ -314,17 +308,14 @@ function triggerGekokujo() {
 }
 
 function startRoulette() {
-  document.getElementById("event-overlay").style.display = "flex";
-  document.getElementById("ev-close").style.display = "none";
+  document.getElementById("event-overlay").style.display = "flex"; document.getElementById("ev-close").style.display = "none";
   document.getElementById("roulette-stop").style.display = "inline-block";
   rouletteTimer = setInterval(() => { document.getElementById("ev-text").innerText = ["💰5000円","💰10000円","お菓子","お菓子"][Math.floor(Math.random()*4)]; }, 50);
 }
 
 function stopRoulette() {
-  clearInterval(rouletteTimer);
-  players[turn].money += parseInt(document.getElementById("ev-text").innerText.match(/\d+/) || 0);
-  document.getElementById("roulette-stop").style.display = "none";
-  document.getElementById("ev-close").style.display = "inline-block";
+  clearInterval(rouletteTimer); players[turn].money += parseInt(document.getElementById("ev-text").innerText.match(/\d+/) || 0);
+  document.getElementById("roulette-stop").style.display = "none"; document.getElementById("ev-close").style.display = "inline-block";
 }
 
 function showResults() {
