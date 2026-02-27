@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>テニス部人生ゲーム：完全復元・統合版</title>
+<title>テニス部人生ゲーム：真・完全版（ご褒美＆説明復活）</title>
 <style>
   :root { --green: #2e8b57; --gold: #ffd700; --red: #e74c3c; --dark: #1a1a1a; }
   body { margin: 0; overflow: hidden; font-family: sans-serif; background: var(--dark); color: #333; }
@@ -15,6 +15,7 @@
   button.big-btn:active { transform: translateY(2px); box-shadow: none; }
   button.warn-btn { background: var(--red); box-shadow: 0 4px 0 #900; }
   button.dark-btn { background: #444; box-shadow: 0 4px 0 #222; }
+  button.gold-btn { background: var(--gold); color: #333; box-shadow: 0 4px 0 #b8860b; }
 
   #sidebar { flex: 0 0 260px; background: rgba(255,255,255,0.9); border-radius: 15px; padding: 10px; display: flex; flex-direction: column; overflow: hidden; }
   #statusArea { overflow-y: auto; flex-grow: 1; }
@@ -37,15 +38,23 @@
     <div id="msg-title" style="font-size:28px; font-weight:bold;"></div>
     <div id="msg-player-icon" style="font-size:60px; margin:10px 0;"></div>
     <div id="msg-body" style="font-size:18px; margin:20px 0; line-height:1.4;"></div>
-    <button class="big-btn" onclick="hideMsg()">了解！</button>
+    <div id="roulette-box" style="font-size:40px; font-weight:bold; color:var(--red); margin:10px 0; display:none;"></div>
+    <button id="msg-ok-btn" class="big-btn" onclick="hideMsg()">了解！</button>
+    <button id="roulette-stop-btn" class="big-btn gold-btn" style="display:none;" onclick="stopRewardRoulette()">ストップ！</button>
   </div>
 </div>
 
 <div id="flow-overlay" class="full-overlay" style="display: flex;">
   <div class="explain-card">
-    <h2>🎾 テニス部人生ゲーム：完全版</h2>
+    <h2 style="color:var(--green);">🎾 テニス部人生ゲーム：完全復活版</h2>
     <div id="flow-content">
-      <p>人数を入力してください</p>
+      <div style="text-align:left; background:#f9f9f9; padding:15px; border-radius:15px; margin-bottom:15px;">
+        <p><b>【基本ルール】</b><br>
+        ・10ターン毎に「部費徴収(-2000円)」が発生。<br>
+        ・3ターン毎に「天気が変化」し、特性に影響が出る。<br>
+        ・所持金マイナスで「闇取引」解禁、いつでも「下剋上」可能！</p>
+      </div>
+      <p>人数を入力してください（最大20人）</p>
       <input type="number" id="p-count" value="14" style="font-size:24px; width:70px; text-align:center;">
       <br><button class="big-btn" onclick="showSetup()">次へ：個別に設定</button>
     </div>
@@ -83,7 +92,6 @@ const traits = [
     {id:"strong", n:"雑草魂", d:"雨の影響なし＆支払い半分"}
 ];
 
-// 全32マスの復元
 const squares = [
     {t:"start", txt:"集合"}, {t:"normal", txt:"ラケット忘れた", m:-3000}, {t:"normal", txt:"ガット切れた", m:-2000}, {t:"reward", txt:"😁"}, 
     {t:"normal", txt:"部室で小銭発見", m:500}, {t:"mini", txt:"☠対決"}, {t:"normal", txt:"猛特訓", m:1000}, {t:"normal", txt:"球拾い", m:-500}, 
@@ -101,12 +109,12 @@ const weathers = [
     {n:"強風", i:"🌀", d:"「追い風マスタ」のサイコロが+1！"}
 ];
 
-let players = [], turn = 0, weatherIdx = 0, globalTurn = 0, isRolling = false;
+let players = [], turn = 0, weatherIdx = 0, globalTurn = 0, isRolling = false, rouletteInterval;
 
 function showSetup() {
     const count = parseInt(document.getElementById("p-count").value);
-    if(isNaN(count) || count < 1) return alert("人数を入れてね");
-    let html = '<div class="setup-grid">';
+    if(isNaN(count) || count < 1) return alert("人数を入力してください");
+    let html = '<p>部員一人ひとりの絵文字と特性を選んでください</p><div class="setup-grid">';
     for(let i=1; i<=count; i++) {
         html += `<div class="setup-item">
             #${i} 名:<input id="n-${i}" style="width:60px;" value="部員${i}"> 
@@ -132,16 +140,49 @@ function initGame(count) {
     render();
 }
 
-function showMsg(title, icon, body, cb) {
+function showMsg(title, icon, body, cb, isRoulette = false) {
     document.getElementById("msg-title").innerText = title;
     document.getElementById("msg-player-icon").innerText = icon;
     document.getElementById("msg-body").innerHTML = body;
     document.getElementById("msg-overlay").style.display = "flex";
+    
+    const okBtn = document.getElementById("msg-ok-btn");
+    const rBox = document.getElementById("roulette-box");
+    const rStop = document.getElementById("roulette-stop-btn");
+
+    if(isRoulette) {
+        okBtn.style.display = "none";
+        rBox.style.display = "block";
+        rStop.style.display = "inline-block";
+        startRewardRoulette();
+    } else {
+        okBtn.style.display = "inline-block";
+        rBox.style.display = "none";
+        rStop.style.display = "none";
+    }
     window._cb = cb;
 }
+
 function hideMsg() {
     document.getElementById("msg-overlay").style.display = "none";
     if(window._cb) window._cb();
+}
+
+function startRewardRoulette() {
+    const rewards = [1000, 2000, 3000, 5000, 10000];
+    const rBox = document.getElementById("roulette-box");
+    rouletteInterval = setInterval(() => {
+        rBox.innerText = "💰 " + rewards[Math.floor(Math.random()*rewards.length)] + "円";
+    }, 50);
+}
+
+function stopRewardRoulette() {
+    clearInterval(rouletteInterval);
+    const amount = parseInt(document.getElementById("roulette-box").innerText.replace(/[^0-9]/g, ""));
+    players[turn].money += amount;
+    document.getElementById("msg-body").innerHTML += `<br><br><b>結果：${amount}円 獲得！</b>`;
+    document.getElementById("roulette-stop-btn").style.display = "none";
+    document.getElementById("msg-ok-btn").style.display = "inline-block";
 }
 
 function rollDice() {
@@ -177,8 +218,7 @@ function move(s) {
     setTimeout(() => {
         const sq = squares[p.pos];
         if(sq.t === "reward") {
-            p.money += 3000;
-            showMsg("😁 ラッキー！", p.emoji, `${p.name}にアイスの差し入れ！<br>+3000円`, endTurn);
+            showMsg("😁 ご褒美ルーレット！", p.emoji, `${p.name}にボーナスのチャンス！`, endTurn, true);
         } else if(sq.t === "mini") {
             p.money += 2000;
             showMsg("☠ 対決勝利！", p.emoji, `${p.name}はミニゲームに勝利した！<br>+2000円`, endTurn);
@@ -197,7 +237,7 @@ function triggerGekokujo() {
     const p = players[turn];
     const top = [...players].filter(x=>!x.goal).sort((a,b)=>b.pos - a.pos)[0];
     if(p === top) return alert("君がトップだ！");
-    showMsg("⚔️ 下剋上の宣言！", p.emoji, `1位の${top.name}に挑みます！<br>勝てば場所を入れ替え、負ければ罰金3000円！`, () => {
+    showMsg("⚔️ 下剋上の宣言！", p.emoji, `1位の${top.name}に挑みます！<br>勝てれば場所を入れ替え、負ければ罰金3000円！`, () => {
         if(Math.random() > 0.5) {
             let tmp = p.pos; p.pos = top.pos; top.pos = tmp;
             showMsg("🎊 成功！", p.emoji, `下剋上成功！${top.name}と入れ替わりました！`, render);
@@ -210,7 +250,7 @@ function triggerGekokujo() {
 
 function triggerTrade() {
     const p = players[turn];
-    const targetName = prompt("誰に賄賂を渡しますか？");
+    const targetName = prompt("誰に賄賂を渡しますか？（名前を正確に入力）");
     const target = players.find(x => x.name === targetName);
     if(!target || target === p) return alert("相手がいないぞ");
     p.money -= 3000; target.money += 3000; p.pos = Math.min(squares.length-1, p.pos + 3);
