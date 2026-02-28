@@ -171,8 +171,10 @@ function renderBoard() {
 function updateStatus() {
   const statusArea = document.getElementById("statusArea");
   statusArea.innerHTML = players.map((p, i) => {
+    // 休み状態の視覚化ラベルを追加
+    const skipLabel = p.skip ? '<span style="color:#e74c3c; font-weight:bold;">💤 休み中</span>' : '';
     return `<div class="money-card ${i===turn?'active-p':''}">
-      <b>${p.emoji}${p.name}</b> [${p.trait.n}]<br>💰${p.money.toLocaleString()}
+      <b>${p.emoji}${p.name}</b> [${p.trait.n}] ${skipLabel}<br>💰${p.money.toLocaleString()}
     </div>`;
   }).join("");
   document.getElementById("revolt-btn").style.display = (!players[turn].goal && turn !== 0)?"block":"none";
@@ -181,9 +183,14 @@ function updateStatus() {
 function rollDice() {
   if(isMoving || players[turn].goal) return;
   if(players[turn].money < 0) { triggerTradeUI(); return; }
-  if(players[turn].skip) { players[turn].skip = false; showEvent(players[turn], "復帰", "コートに戻った！「待たせたねｗ」"); return; }
   
-  // 天候の更新（ターン開始時に天候を決める）
+  if(players[turn].skip) { 
+    players[turn].skip = false; 
+    showEvent(players[turn], "復帰", "コートに戻った！「待たせたねｗ」"); 
+    updateStatus();
+    return; 
+  }
+  
   if (turn === 0 || players.slice(0, turn).every(pl => pl.goal)) {
     currentWeather = weathers[Math.floor(Math.random()*weathers.length)];
     document.getElementById("weather-display").innerText = currentWeather.n;
@@ -276,7 +283,6 @@ function closeEvent() {
   if(players.every(pl => pl.goal)) {
     showResults();
   } else {
-    // 次の有効なプレイヤーへターンを渡す修正
     let nextTurn = (turn + 1) % players.length;
     while (players[nextTurn].goal) {
       nextTurn = (nextTurn + 1) % players.length;
