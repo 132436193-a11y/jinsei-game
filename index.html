@@ -82,10 +82,12 @@
 <script>
 let players = [], turn = 0, isMoving = false, rouletteTimer = null, currentWeather = {id:"sunny", n:"☀️ 晴れ"};
 const emojis_list = ["🎾","🎀","💄","🍦","🌸","⭐","🔥","💧","🍀","🌙","☀️","🌈","🐾","🎨"];
+// 特性リストに「追い風マスター」を復元
 const traits = [
   {id:"fav", n:"顧問の愛弟子", bonus: (w) => 1},
   {id:"sun", n:"晴れ女", bonus: (w) => w.id === "sunny" ? 2 : 0},
   {id:"strong", n:"雑草魂", bonus: (w) => w.id === "rainy" ? 2 : 0},
+  {id:"wind", n:"追い風マスター", bonus: (w) => w.id === "windy" ? 2 : 0},
   {id:"none", n:"普通の部員", bonus: (w) => 0}
 ];
 const weathers = [{id:"sunny", n:"☀️ 晴れ"}, {id:"rainy", n:"☔ 豪雨"}, {id:"windy", n:"🍃 追い風"}];
@@ -171,7 +173,6 @@ function renderBoard() {
 function updateStatus() {
   const statusArea = document.getElementById("statusArea");
   statusArea.innerHTML = players.map((p, i) => {
-    // 休み状態の視覚化ラベルを追加
     const skipLabel = p.skip ? '<span style="color:#e74c3c; font-weight:bold;">💤 休み中</span>' : '';
     return `<div class="money-card ${i===turn?'active-p':''}">
       <b>${p.emoji}${p.name}</b> [${p.trait.n}] ${skipLabel}<br>💰${p.money.toLocaleString()}
