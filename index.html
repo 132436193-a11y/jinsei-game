@@ -40,6 +40,11 @@
   <div class="event-card">
     <div id="ev-player" style="font-size:20px; color:var(--pink); font-weight:bold;"></div>
     <div id="ev-text" style="font-size:24px; font-weight:bold; margin:15px 0;"></div>
+    <div id="quiz-ui" style="display:none;">
+      <p style="font-size:16px;">現実でクイズを出題してください！</p>
+      <button class="big-btn" style="background:var(--green);" onclick="resolveQuiz(true)">正解！(ゴール確定)</button>
+      <button class="big-btn" style="background:#e74c3c;" onclick="resolveQuiz(false)">不正解…(3マス戻る)</button>
+    </div>
     <div id="trade-ui" style="display:none;">
       貸してくれる相手: <select id="trade-target-select" style="font-size:18px;"></select>
       <br>
@@ -122,12 +127,12 @@ const squares = [
 
 function generateSetup() {
   const count = parseInt(document.getElementById("p-count").value);
-  let html = `<h2 style="color:var(--pink); text-align:center;">部員設定</h2><div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:10px;">`;
+  let html = `<h2 style="color:var(--pink); text-align:center;">部員設定</h2><p style="font-size:12px; text-align:center;">※直接入力はリスト選択より優先されます</p><div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:10px;">`;
   for(let i=0; i<count; i++) {
     html += `<div style="background:#fff0f5; padding:8px; border-radius:8px; font-size:12px; border:1px solid var(--pink);">
       #${i+1} 名前:<input id="n-${i}" style="width:70px;" value="部員${i+1}"><br>
-      自由入力絵文字:<input id="e-custom-${i}" style="width:30px;" placeholder="🔥"><br>
-      またはリスト:<select id="e-${i}">${emojis_list.map((e, idx)=>`<option value="${e}" ${idx===(i % emojis_list.length)?'selected':''}>${e}</option>`).join("")}</select><br>
+      絵文字入力:<input id="e-custom-${i}" style="width:40px;" placeholder="🔥"> <br>
+      リスト選択:<select id="e-${i}">${emojis_list.map((e, idx)=>`<option value="${e}" ${idx===(i % emojis_list.length)?'selected':''}>${e}</option>`).join("")}</select><br>
       特性:<select id="t-${i}">${traits.map(t=>`<option value="${t.id}">${t.n}</option>`).join("")}</select>
     </div>`;
   }
@@ -142,7 +147,7 @@ function confirmSetup(count) {
     const selectedEmoji = document.getElementById(`e-${i}`).value;
     players.push({
       id:i, name:document.getElementById(`n-${i}`).value, 
-      emoji: customEmoji || selectedEmoji, 
+      emoji: customEmoji.length > 0 ? customEmoji : selectedEmoji, 
       pos:0, money:0, goal:false, 
       trait:traits.find(tr=>tr.id===document.getElementById(`t-${i}`).value), 
       skip:false
@@ -201,10 +206,21 @@ function startDiceRoll() {
 }
 
 function movePlayer(steps) {
-  let p = players[turn]; p.pos = Math.min(squares.length-1, p.pos + steps); renderBoard(); const s = squares[p.pos];
+  let p = players[turn]; 
+  p.pos = Math.min(squares.length-1, p.pos + steps); 
+  renderBoard(); 
+  const s = squares[p.pos];
   
-  if(s.t === "reward") startRoulette();
-  else if(s.taxAll) {
+  if(p.pos === squares.length - 1) {
+    document.getElementById("ev-close").style.display = "none";
+    document.getElementById("quiz-ui").style.display = "block";
+    showEvent(p, "最終試練", "ゴール目前！<br>引退前にクイズに答えてください！");
+    return;
+  }
+
+  if(s.t === "reward") {
+    startRoulette();
+  } else if(s.taxAll) {
     players.forEach(pl => { if(!pl.goal) pl.money -= 1000; });
     showEvent(p, "連帯責任", s.txt+"<br>全員-1000円！");
     updateStatus();
@@ -218,6 +234,23 @@ function movePlayer(steps) {
   }
 }
 
+function resolveQuiz(isCorrect) {
+  const p = players[turn];
+  document.getElementById("quiz-ui").style.display = "none";
+  document.getElementById("ev-close").style.display = "inline-block";
+  
+  if(isCorrect) {
+    p.money += 30000;
+    p.goal = true;
+    showEvent(p, "祝・引退✨", "クイズ正解！無事に引退を迎えました！<br>お疲れ様でした！💰30,000円");
+  } else {
+    p.pos = Math.max(0, p.pos - 3);
+    renderBoard();
+    showEvent(p, "やり直し💀", "クイズ不正解…<br>まだ引退させてもらえません！3マス戻る");
+  }
+  updateStatus();
+}
+
 function showEvent(p, title, text) {
   document.getElementById("ev-player").innerText = p.emoji + " " + p.name;
   document.getElementById("ev-text").innerHTML = text;
@@ -228,8 +261,6 @@ function closeEvent() {
   document.getElementById("event-overlay").style.display = "none";
   document.getElementById("trade-ui").style.display = "none";
   document.getElementById("game-dice-roll").style.display = "none";
-  
-  if(players[turn].pos === squares.length-1) players[turn].goal = true;
   
   isMoving = false; 
   document.getElementById("diceBtn").disabled = false;
@@ -304,6 +335,7 @@ function triggerGekokujo() {
 function startRoulette() {
   document.getElementById("event-overlay").style.display = "flex";
   document.getElementById("roulette-stop").style.display = "inline-block";
+  document.getElementById("ev-close").style.display = "none";
   rouletteTimer = setInterval(() => { document.getElementById("ev-text").innerText = ["💰5,000円","💰10,000円","💰20,000円","💰30,000円"][Math.floor(Math.random()*4)]; }, 50);
 }
 
@@ -316,6 +348,7 @@ function stopRoulette() {
   
   p.money += val;
   document.getElementById("roulette-stop").style.display = "none";
+  document.getElementById("ev-close").style.display = "inline-block";
   updateStatus();
 }
 
