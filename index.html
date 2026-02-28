@@ -11,8 +11,6 @@
   #statusArea { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
   .money-card { padding: 6px; border-radius: 8px; background: #fff; border: 2px solid #ddd; position: relative; font-size: 11px; }
   .active-p { border-color: var(--pink); background: #fff5f8; transform: scale(1.02); z-index: 2; box-shadow: 0 0 10px rgba(255,105,180,0.3); }
-  .paired-status { border: 2px solid var(--cyan) !important; background: #e0ffff !important; }
-  .pair-badge { background: var(--cyan); color: white; font-size: 9px; padding: 1px 4px; border-radius: 4px; display: block; margin-top: 2px; }
   #game-area { flex: 1; display: flex; flex-direction: column; gap: 5px; }
   #board { display: grid; grid-template-columns: repeat(8, 1fr); grid-template-rows: repeat(4, 1fr); gap: 4px; flex-grow: 1; }
   .square { background: var(--green); border: 1px solid white; border-radius: 6px; color: white; padding: 4px; font-size: 10px; position: relative; }
@@ -128,7 +126,7 @@ function generateSetup() {
   for(let i=0; i<count; i++) {
     html += `<div style="background:#fff0f5; padding:8px; border-radius:8px; font-size:12px; border:1px solid var(--pink);">
       #${i+1} 名前:<input id="n-${i}" style="width:70px;" value="部員${i+1}"><br>
-      絵文字:<select id="e-${i}">${emojis_list.map((e, idx)=>`<option value="${e}" ${idx===i?'selected':''}>${e}</option>`).join("")}</select><br>
+      絵文字:<select id="e-${i}">${emojis_list.map((e, idx)=>`<option value="${e}" ${idx===(i % emojis_list.length)?'selected':''}>${e}</option>`).join("")}</select><br>
       特性:<select id="t-${i}">${traits.map(t=>`<option value="${t.id}">${t.n}</option>`).join("")}</select>
     </div>`;
   }
@@ -144,7 +142,7 @@ function confirmSetup(count) {
       emoji:document.getElementById(`e-${i}`).value, 
       pos:0, money:0, goal:false, 
       trait:traits.find(tr=>tr.id===document.getElementById(`t-${i}`).value), 
-      skip:false, pairWith: null
+      skip:false
     });
   }
   document.getElementById("start-overlay").style.display="none"; renderBoard(); updateStatus();
@@ -155,7 +153,7 @@ function renderBoard() {
   squares.forEach((s, i) => b.innerHTML += `<div class="square type-${s.t}" id="sq-${i}"><small>${i}</small><br><b>${s.txt}</b></div>`);
   players.forEach(p => {
     const t = document.createElement("div"); t.className = "token-emoji";
-    t.innerHTML = `${p.emoji}<span class="token-name">${p.name}${p.pairWith!==null?'🤝':''}</span>`;
+    t.innerHTML = `${p.emoji}<span class="token-name">${p.name}</span>`;
     document.getElementById(`sq-${p.pos}`).appendChild(t);
     t.style.left = (p.id * 4) + "px"; t.style.top = (p.id % 2 * 10) + "px";
   });
@@ -164,10 +162,8 @@ function renderBoard() {
 function updateStatus() {
   const statusArea = document.getElementById("statusArea");
   statusArea.innerHTML = players.map((p, i) => {
-    const isPaired = p.pairWith !== null;
-    return `<div class="money-card ${i===turn?'active-p':''} ${isPaired?'paired-status':''}">
+    return `<div class="money-card ${i===turn?'active-p':''}">
       <b>${p.emoji}${p.name}</b><br>💰${p.money.toLocaleString()}
-      ${isPaired?`<span class="pair-badge">🤝 ${players[p.pairWith].name}</span>`:''}
     </div>`;
   }).join("");
   document.getElementById("revolt-btn").style.display = (!players[turn].goal && turn !== 0)?"block":"none";
@@ -204,17 +200,6 @@ function startDiceRoll() {
 function movePlayer(steps) {
   let p = players[turn]; p.pos = Math.min(squares.length-1, p.pos + steps); renderBoard(); const s = squares[p.pos];
   
-  if(s.t === "normal" && Math.random() < 0.3 && p.pairWith === null) {
-    let others = players.filter(pl => pl.id !== p.id && !pl.goal);
-    if(others.length > 0) {
-      let target = others[Math.floor(Math.random()*others.length)];
-      p.pairWith = target.id; target.pairWith = p.id;
-      showEvent(p, "🤝 ダブルス結成！", `${target.name}とペアを組んだ！<br>「今日から運命共同体だよｗ」`);
-      updateStatus();
-      return;
-    }
-  }
-
   if(s.t === "reward") startRoulette();
   else if(s.taxAll) {
     players.forEach(pl => { if(!pl.goal) pl.money -= 1000; });
@@ -222,7 +207,6 @@ function movePlayer(steps) {
     updateStatus();
   } else {
     let amount = s.m || 0;
-    if(p.pairWith !== null) { players[p.pairWith].money += amount; }
     p.money += amount;
     if(s.skip) p.skip = true;
     if(s.move) { p.pos = Math.max(0, Math.min(squares.length-1, p.pos+s.move)); setTimeout(renderBoard, 400); }
@@ -279,7 +263,6 @@ function executeTradeRoll() {
         if(res >= 4) {
           p.money -= 3000; players[tid].money += 3000; 
           p.money += 10000;
-          if(p.pairWith !== null) players[p.pairWith].money += 10000;
           p.pos = Math.min(squares.length-1, p.pos + 3);
           showEvent(p, "大成功✨", "3マス進んで賞金10,000円ゲット！「借りたっけ？もらったｗ」"); renderBoard();
         } else {
@@ -325,10 +308,6 @@ function stopRoulette() {
   const val = match ? parseInt(match[0]) : 0;
   
   p.money += val;
-  if(p.pairWith !== null) {
-    players[p.pairWith].money += val;
-  }
-  
   document.getElementById("roulette-stop").style.display = "none";
   updateStatus();
 }
