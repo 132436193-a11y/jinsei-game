@@ -115,7 +115,7 @@ const squares = [
   {t:"normal", txt:"ボールホルダー忘れ。結構最悪", move:-2, m:-500}, 
   {t:"normal", txt:"応援で喉枯れる。ガラガラだー", m:-1000}, 
   {t:"normal", txt:"日焼け止め塗っても真っ黒！激おこ。", m:-1500},
-  {t:"normal", txt:"汗で服の色変わっちゃった。", move:-1, m:-1000}, 
+  {t:"normal", txt:"汗で服の色が変わっちゃった。", move:-1, m:-1000}, 
   {t:"normal", txt:"日に日に増える5分間走。キツすぎー", move:-2, m:-2000}, 
   {t:"normal", txt:"写真写り最悪。しかもブログに上げるとかやめてもらって？", m:-2000},
   {t:"normal", txt:"日焼け止め忘れたーけど、貸してもらったにょ。ガチサンキュー。", move:6, m:5000}, 
@@ -204,7 +204,6 @@ function startDiceRoll() {
 function movePlayer(steps) {
   let p = players[turn]; p.pos = Math.min(squares.length-1, p.pos + steps); renderBoard(); const s = squares[p.pos];
   
-  // 通常マスでのダブルス抽選（30%）
   if(s.t === "normal" && Math.random() < 0.3 && p.pairWith === null) {
     let others = players.filter(pl => pl.id !== p.id && !pl.goal);
     if(others.length > 0) {
@@ -239,12 +238,21 @@ function closeEvent() {
   document.getElementById("event-overlay").style.display = "none";
   document.getElementById("trade-ui").style.display = "none";
   document.getElementById("game-dice-roll").style.display = "none";
-  if(players[turn].pos === squares.length-1) players[turn].goal = true;
-  isMoving = false; document.getElementById("diceBtn").disabled = false;
   
-  if(players.every(pl => pl.goal)) showResults();
-  else {
-    do { turn = (turn + 1) % players.length; } while(players[turn].goal);
+  if(players[turn].pos === squares.length-1) players[turn].goal = true;
+  
+  isMoving = false; 
+  document.getElementById("diceBtn").disabled = false;
+  
+  if(players.every(pl => pl.goal)) {
+    showResults();
+  } else {
+    // ターン交代：ゴールしていない次の人を探す
+    let nextTurn = turn;
+    do {
+      nextTurn = (nextTurn + 1) % players.length;
+    } while (players[nextTurn].goal && !players.every(pl => pl.goal));
+    turn = nextTurn;
     updateStatus();
   }
 }
