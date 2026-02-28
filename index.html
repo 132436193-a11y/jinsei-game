@@ -122,11 +122,12 @@ const squares = [
 
 function generateSetup() {
   const count = parseInt(document.getElementById("p-count").value);
-  let html = `<h2 style="color:var(--pink); text-align:center;">部員設定</h2><div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:10px;">`;
+  let html = `<h2 style="color:var(--pink); text-align:center;">部員設定</h2><div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:10px;">`;
   for(let i=0; i<count; i++) {
     html += `<div style="background:#fff0f5; padding:8px; border-radius:8px; font-size:12px; border:1px solid var(--pink);">
       #${i+1} 名前:<input id="n-${i}" style="width:70px;" value="部員${i+1}"><br>
-      絵文字:<select id="e-${i}">${emojis_list.map((e, idx)=>`<option value="${e}" ${idx===(i % emojis_list.length)?'selected':''}>${e}</option>`).join("")}</select><br>
+      絵文字:<input id="e-custom-${i}" style="width:30px;" placeholder="🔥"> または 
+      <select id="e-${i}">${emojis_list.map((e, idx)=>`<option value="${e}" ${idx===(i % emojis_list.length)?'selected':''}>${e}</option>`).join("")}</select><br>
       特性:<select id="t-${i}">${traits.map(t=>`<option value="${t.id}">${t.n}</option>`).join("")}</select>
     </div>`;
   }
@@ -137,9 +138,11 @@ function generateSetup() {
 function confirmSetup(count) {
   players = [];
   for(let i=0; i<count; i++) {
+    const customEmoji = document.getElementById(`e-custom-${i}`).value.trim();
+    const selectedEmoji = document.getElementById(`e-${i}`).value;
     players.push({
       id:i, name:document.getElementById(`n-${i}`).value, 
-      emoji:document.getElementById(`e-${i}`).value, 
+      emoji: customEmoji || selectedEmoji, 
       pos:0, money:0, goal:false, 
       trait:traits.find(tr=>tr.id===document.getElementById(`t-${i}`).value), 
       skip:false
