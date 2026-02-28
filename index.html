@@ -278,12 +278,12 @@ function executeTradeRoll() {
       setTimeout(() => {
         if(res >= 4) {
           p.money -= 3000; players[tid].money += 3000; 
-          p.money += 10000; // 成功報酬
+          p.money += 10000;
           if(p.pairWith !== null) players[p.pairWith].money += 10000;
           p.pos = Math.min(squares.length-1, p.pos + 3);
           showEvent(p, "大成功✨", "3マス進んで賞金10,000円ゲット！「借りたっけ？もらったｗ」"); renderBoard();
         } else {
-          p.money -= 3000; showEvent(p, "大失敗💀", "罰金…「今のなし！ｗ」");
+          p.money -= 3000; showEvent(p, "大失敗💀", "罰金…");
         }
         updateStatus();
       }, 800);
