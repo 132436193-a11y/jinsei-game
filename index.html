@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>女子テニス部人生ゲーム：修正版</title>
+<title>女子テニス部人生ゲーム：完全復旧版</title>
 <style>
   :root { --green: #2e8b57; --gold: #ffd700; --dark: #1a1a1a; --pink: #ff69b4; --cyan: #00ced1; }
   body { margin: 0; overflow: hidden; font-family: sans-serif; background: var(--dark); color: #333; }
@@ -33,7 +33,7 @@
     <div id="initial-screen" style="text-align:center;">
       部員数を入力 (最大14人): <br>
       <input type="number" id="p-count" value="4" min="1" max="14" style="font-size:24px; width:80px; text-align:center; margin:15px;">
-      <br><button class="big-btn" onclick="generateSetup()">登録へ</button>
+      <br><button class="big-btn" onclick="generateSetup()">部員登録へ</button>
     </div>
   </div>
 </div>
@@ -57,7 +57,7 @@
 <div id="result-overlay" class="full-overlay">
   <h1 style="font-size:40px; color:var(--gold);">🏅 引退式 🏅</h1>
   <div id="rank-list"></div>
-  <button class="big-btn" onclick="location.reload()">リロード</button>
+  <button class="big-btn" onclick="location.reload()">もう一度</button>
 </div>
 
 <div class="main-container">
@@ -80,41 +80,72 @@
 let players = [], turn = 0, isMoving = false, rouletteTimer = null, currentWeather = {id:"sunny", n:"☀️ 晴れ"};
 const emojis_list = ["🎾","🎀","💄","🍦","🌸","⭐","🔥","💧","🍀","🌙","☀️","🌈","🐾","🎨"];
 const traits = [
-  {id:"fav", n:"顧問の愛弟子", bonus: (p, w) => 1},
-  {id:"sun", n:"晴れ女", bonus: (p, w) => w.id === "sunny" ? 2 : 0},
-  {id:"strong", n:"雑草魂", bonus: (p, w) => w.id === "rainy" ? 2 : 0},
-  {id:"none", n:"普通の部員", bonus: (p, w) => 0}
+  {id:"fav", n:"顧問の愛弟子", bonus: (w) => 1},
+  {id:"sun", n:"晴れ女", bonus: (w) => w.id === "sunny" ? 2 : 0},
+  {id:"strong", n:"雑草魂", bonus: (w) => w.id === "rainy" ? 2 : 0},
+  {id:"none", n:"普通の部員", bonus: (w) => 0}
 ];
 const weathers = [{id:"sunny", n:"☀️ 晴れ"}, {id:"rainy", n:"☔ 豪雨"}, {id:"windy", n:"🍃 追い風"}];
 
 const squares = [
-  {t:"start", txt:"入学！", m:0}, {t:"normal", txt:"ガット張替え。高っ！", m:-2000}, {t:"normal", txt:"部室に忘れ物。戻る！", move:-2},
-  {t:"reward", txt:"😁ボーナス", m:0}, {t:"normal", txt:"おばちゃんから苦情。全員罰金！", m:-3000, taxAll:true}, {t:"normal", txt:"チャリパンク。歩け！", m:-4000, skip:true},
-  {t:"normal", txt:"ラケット破壊。", m:-15000}, {t:"normal", txt:"午前授業。部活長いっ", m:-1000}, {t:"normal", txt:"ライン際でズッコケ。恥ずいｗ", m:500},
-  {t:"normal", txt:"祝！中国大会出場！🎉", move:5, m:10000}, {t:"normal", txt:"お守りをもらう！", move:3, m:2000}, {t:"reward", txt:"😁ボーナス", m:0},
-  {t:"normal", txt:"前髪終了。", move:-1, m:-500}, {t:"normal", txt:"スコアミスった。走れ！", move:-2}, {t:"normal", txt:"雨で部活オフ！", move:2, m:1500},
-  {t:"normal", txt:"靴から無限に砂。", move:-1, m:-200}, {t:"normal", txt:"ボール直撃。痛っ！", m:-2000, skip:true}, {t:"reward", txt:"😁ボーナス", m:0},
-  {t:"normal", txt:"先輩から怒られる。", move:-2, m:-1000}, {t:"normal", txt:"顧問の機嫌が悪い。", m:-5000}, {t:"normal", txt:"雪！テンション爆発", move:4, m:2000},
-  {t:"normal", txt:"おしゃべりタイム。", m:1000}, {t:"normal", txt:"絶好調！", move:2, m:3000}, {t:"reward", txt:"😁ボーナス", m:0},
-  {t:"normal", txt:"ホルダー忘れ。最悪ｗ", move:-2, m:-500}, {t:"normal", txt:"応援で喉枯れる。", m:-1000}, {t:"normal", txt:"日焼け止め、効果なし。黒いｗ", m:-1500},
-  {t:"normal", txt:"汗で服の色が変わった。", move:-1, m:-1000}, {t:"normal", txt:"5分間走。死ぬｗ", move:-2, m:-2000}, {t:"normal", txt:"写真写り最悪。", m:-2000},
-  {t:"normal", txt:"日焼け止め、貸してもらった！", move:6, m:5000}, {t:"goal", txt:"引退", m:10000}
+  {t:"start", txt:"入学！", m:0}, 
+  {t:"normal", txt:"ガット張替え。地味に高いんだyo", m:-2000}, 
+  {t:"normal", txt:"練習し過ぎで疲労骨折。", move:-3, m:-5000},
+  {t:"reward", txt:"😁ボーナス", m:0}, 
+  {t:"normal", txt:"おばちゃんから苦情。全員罰金ですよ？", m:-3000, taxAll:true}, 
+  {t:"normal", txt:"福田行く途中にチャリパンク。", m:-4000, skip:true},
+  {t:"normal", txt:"スマッシュでラケットふっとばして破壊。", m:-15000}, 
+  {t:"normal", txt:"午前授業が始まる。部活が長過ぎる", m:-1000}, 
+  {t:"normal", txt:"ラインにつまずいてローリングズッコケ。", m:1000},
+  {t:"normal", txt:"祝！中国大会出場！🎉", move:5, m:10000}, 
+  {t:"normal", txt:"試合に向けてお守りをもらう！", move:3, m:2000}, 
+  {t:"reward", txt:"😁ボーナス", m:0},
+  {t:"normal", txt:"前髪終了。", move:-1, m:-500}, 
+  {t:"normal", txt:"スコアのポイントプラス！", m:3000}, 
+  {t:"normal", txt:"雨で部活オフ！", move:2, m:1500},
+  {t:"normal", txt:"靴から無限に砂。", move:-1, m:-200}, 
+  {t:"normal", txt:"ボレーミスって顔面にボール直撃。", m:-2000, skip:true}, 
+  {t:"reward", txt:"😁ボーナス", m:0},
+  {t:"normal", txt:"先輩から怒られる。", move:-2, m:-1000}, 
+  {t:"normal", txt:"顧問機嫌ワルワルモード。", m:-5000}, 
+  {t:"normal", txt:"練習中に雪！テンションマックス", move:4, m:2000},
+  {t:"normal", txt:"おしゃべりタイム。", m:1000}, 
+  {t:"normal", txt:"調子が絶好調！", move:2, m:3000}, 
+  {t:"reward", txt:"😁ボーナス", m:0},
+  {t:"normal", txt:"ボールホルダー忘れ。結構最悪", move:-2, m:-500}, 
+  {t:"normal", txt:"応援で喉枯れる。ガラガラだー", m:-1000}, 
+  {t:"normal", txt:"日焼け止め塗っても真っ黒！激おこ。", m:-1500},
+  {t:"normal", txt:"汗で服の色変わっちゃった。", move:-1, m:-1000}, 
+  {t:"normal", txt:"日に日に増える5分間走。キツすぎー", move:-2, m:-2000}, 
+  {t:"normal", txt:"写真写り最悪。しかもブログに上げるとかやめてもらって？", m:-2000},
+  {t:"normal", txt:"日焼け止め忘れたーけど、貸してもらったにょ。ガチサンキュー。", move:6, m:5000}, 
+  {t:"goal", txt:"引退", m:10000}
 ];
 
 function generateSetup() {
   const count = parseInt(document.getElementById("p-count").value);
   let html = `<h2 style="color:var(--pink); text-align:center;">部員設定</h2><div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:10px;">`;
   for(let i=0; i<count; i++) {
-    html += `<div style="background:#fff0f5; padding:8px; border-radius:8px; font-size:12px; border:1px solid var(--pink);">#${i+1} 名前:<input id="n-${i}" style="width:70px;" value="部員${i+1}"><br>特性:<select id="t-${i}">${traits.map(t=>`<option value="${t.id}">${t.n}</option>`).join("")}</select></div>`;
+    html += `<div style="background:#fff0f5; padding:8px; border-radius:8px; font-size:12px; border:1px solid var(--pink);">
+      #${i+1} 名前:<input id="n-${i}" style="width:70px;" value="部員${i+1}"><br>
+      絵文字:<select id="e-${i}">${emojis_list.map((e, idx)=>`<option value="${e}" ${idx===i?'selected':''}>${e}</option>`).join("")}</select><br>
+      特性:<select id="t-${i}">${traits.map(t=>`<option value="${t.id}">${t.n}</option>`).join("")}</select>
+    </div>`;
   }
-  html += `</div><button class="big-btn" style="margin-top:20px;" onclick="confirmSetup(${count})">開始</button>`;
+  html += `</div><button class="big-btn" style="margin-top:20px;" onclick="confirmSetup(${count})">部活開始！</button>`;
   document.getElementById("setup-content").innerHTML = html;
 }
 
 function confirmSetup(count) {
   players = [];
   for(let i=0; i<count; i++) {
-    players.push({id:i, name:document.getElementById(`n-${i}`).value, emoji:emojis_list[i%emojis_list.length], pos:0, money:0, goal:false, trait:traits.find(tr=>tr.id===document.getElementById(`t-${i}`).value), skip:false, pairWith: null});
+    players.push({
+      id:i, name:document.getElementById(`n-${i}`).value, 
+      emoji:document.getElementById(`e-${i}`).value, 
+      pos:0, money:0, goal:false, 
+      trait:traits.find(tr=>tr.id===document.getElementById(`t-${i}`).value), 
+      skip:false, pairWith: null
+    });
   }
   document.getElementById("start-overlay").style.display="none"; renderBoard(); updateStatus();
 }
@@ -134,7 +165,10 @@ function updateStatus() {
   const statusArea = document.getElementById("statusArea");
   statusArea.innerHTML = players.map((p, i) => {
     const isPaired = p.pairWith !== null;
-    return `<div class="money-card ${i===turn?'active-p':''} ${isPaired?'paired-status':''}"><b>${p.emoji}${p.name}</b><br>💰${p.money.toLocaleString()}${isPaired?`<span class="pair-badge">🤝 ${players[p.pairWith].name}</span>`:''}</div>`;
+    return `<div class="money-card ${i===turn?'active-p':''} ${isPaired?'paired-status':''}">
+      <b>${p.emoji}${p.name}</b><br>💰${p.money.toLocaleString()}
+      ${isPaired?`<span class="pair-badge">🤝 ${players[p.pairWith].name}</span>`:''}
+    </div>`;
   }).join("");
   document.getElementById("revolt-btn").style.display = (!players[turn].goal && turn !== 0)?"block":"none";
 }
@@ -144,7 +178,6 @@ function rollDice() {
   if(players[turn].money < 0) { triggerTradeUI(); return; }
   if(players[turn].skip) { players[turn].skip = false; showEvent(players[turn], "復帰", "コートに戻った！「待たせたねｗ」"); return; }
   
-  // ターンが最初の人に戻る時だけ天気を変える（コロコロ変わるのを防ぐ）
   if (turn === 0 || !players.slice(0, turn).some(p => !p.goal)) {
     currentWeather = weathers[Math.floor(Math.random()*weathers.length)];
     document.getElementById("weather-display").innerText = currentWeather.n;
@@ -157,12 +190,11 @@ function startDiceRoll() {
   isMoving = true; document.getElementById("diceBtn").disabled = true;
   let count = 0;
   const timer = setInterval(() => {
-    let rand = Math.floor(Math.random()*6)+1;
-    document.getElementById("diceNum").innerText = "🎲 " + rand;
+    document.getElementById("diceNum").innerText = "🎲 " + (Math.floor(Math.random()*6)+1);
     if(++count > 10) {
       clearInterval(timer);
       let dice = Math.floor(Math.random()*6)+1;
-      let bonus = players[turn].trait.bonus(players[turn], currentWeather);
+      let bonus = players[turn].trait.bonus(currentWeather);
       document.getElementById("diceNum").innerText = `🎲 ${dice}${bonus > 0 ? ' + '+bonus : ''}`;
       setTimeout(() => movePlayer(dice + bonus), 600);
     }
@@ -172,7 +204,7 @@ function startDiceRoll() {
 function movePlayer(steps) {
   let p = players[turn]; p.pos = Math.min(squares.length-1, p.pos + steps); renderBoard(); const s = squares[p.pos];
   
-  // 30%の確率で通常マスでダブルスイベント発生
+  // 通常マスでのダブルス抽選（30%）
   if(s.t === "normal" && Math.random() < 0.3 && p.pairWith === null) {
     let others = players.filter(pl => pl.id !== p.id && !pl.goal);
     if(others.length > 0) {
@@ -186,7 +218,7 @@ function movePlayer(steps) {
   if(s.t === "reward") startRoulette();
   else if(s.taxAll) {
     players.forEach(pl => { if(!pl.goal) pl.money -= 3000; });
-    showEvent(p, "連帯責任", s.txt+"<br>全員-3000円！「みんなドンマイｗ」");
+    showEvent(p, "連帯責任", s.txt+"<br>全員-3000円！");
   } else {
     let amount = s.m || 0;
     if(p.pairWith !== null) { players[p.pairWith].money += amount; }
@@ -267,7 +299,7 @@ function triggerGekokujo() {
 function startRoulette() {
   document.getElementById("event-overlay").style.display = "flex";
   document.getElementById("roulette-stop").style.display = "inline-block";
-  rouletteTimer = setInterval(() => { document.getElementById("ev-text").innerText = ["💰5000円","💰10000円","お菓子","お菓子"][Math.floor(Math.random()*4)]; }, 50);
+  rouletteTimer = setInterval(() => { document.getElementById("ev-text").innerText = ["💰5000円","💰10000円","高級ゼリー","お菓子"][Math.floor(Math.random()*4)]; }, 50);
 }
 
 function stopRoulette() {
