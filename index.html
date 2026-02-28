@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>女子テニス部人生ゲーム：完全復旧版</title>
+<title>女子テニス部人生ゲーム：完全版</title>
 <style>
   :root { --green: #2e8b57; --gold: #ffd700; --dark: #1a1a1a; --pink: #ff69b4; --cyan: #00ced1; }
   body { margin: 0; overflow: hidden; font-family: sans-serif; background: var(--dark); color: #333; }
@@ -126,8 +126,8 @@ function generateSetup() {
   for(let i=0; i<count; i++) {
     html += `<div style="background:#fff0f5; padding:8px; border-radius:8px; font-size:12px; border:1px solid var(--pink);">
       #${i+1} 名前:<input id="n-${i}" style="width:70px;" value="部員${i+1}"><br>
-      絵文字:<input id="e-custom-${i}" style="width:30px;" placeholder="🔥"> または 
-      <select id="e-${i}">${emojis_list.map((e, idx)=>`<option value="${e}" ${idx===(i % emojis_list.length)?'selected':''}>${e}</option>`).join("")}</select><br>
+      自由入力絵文字:<input id="e-custom-${i}" style="width:30px;" placeholder="🔥"><br>
+      またはリスト:<select id="e-${i}">${emojis_list.map((e, idx)=>`<option value="${e}" ${idx===(i % emojis_list.length)?'selected':''}>${e}</option>`).join("")}</select><br>
       特性:<select id="t-${i}">${traits.map(t=>`<option value="${t.id}">${t.n}</option>`).join("")}</select>
     </div>`;
   }
@@ -259,9 +259,12 @@ function executeTradeRoll() {
   document.getElementById("trade-ui").style.display = "none";
   document.getElementById("game-dice-roll").style.display = "block";
   let c = 0; const t = setInterval(() => {
-    document.getElementById("game-dice-roll").innerText = "🎲 " + (Math.floor(Math.random()*6)+1);
+    let tempRes = Math.floor(Math.random()*6)+1;
+    document.getElementById("game-dice-roll").innerText = "🎲 " + tempRes;
     if(++c > 12) {
-      clearInterval(t); const res = Math.floor(Math.random()*6)+1;
+      clearInterval(t); 
+      const res = Math.floor(Math.random()*6)+1;
+      document.getElementById("game-dice-roll").innerText = "🎲 " + res;
       setTimeout(() => {
         if(res >= 4) {
           p.money -= 3000; players[tid].money += 3000; 
@@ -269,7 +272,8 @@ function executeTradeRoll() {
           p.pos = Math.min(squares.length-1, p.pos + 3);
           showEvent(p, "大成功✨", "3マス進んで賞金10,000円ゲット！「借りたっけ？もらったｗ」"); renderBoard();
         } else {
-          p.money -= 3000; showEvent(p, "大失敗💀", "罰金…");
+          p.money -= 3000; 
+          showEvent(p, "大失敗💀", "罰金…");
         }
         updateStatus();
       }, 800);
