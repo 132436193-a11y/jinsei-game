@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>女子テニス部人生ゲーム：完全版</title>
+<title>女子テニス部人生ゲーム：祝卒業🌸</title>
 <style>
   :root { --green: #2e8b57; --gold: #ffd700; --dark: #1a1a1a; --pink: #ff69b4; --cyan: #00ced1; }
   body { margin: 0; overflow: hidden; font-family: sans-serif; background: var(--dark); color: #333; }
@@ -180,9 +180,16 @@ function updateStatus() {
 function rollDice() {
   if(isMoving || players[turn].goal) return;
   if(players[turn].money < 0) { triggerTradeUI(); return; }
-  if(players[turn].skip) { players[turn].skip = false; showEvent(players[turn], "復帰", "コートに戻った！「待たせたねｗ」"); return; }
   
-  if (turn === 0 || !players.slice(0, turn).some(p => !p.goal)) {
+  if(players[turn].skip) { 
+    players[turn].skip = false; 
+    showEvent(players[turn], "復帰", "コートに戻った！「待たせたねｗ」"); 
+    return; 
+  }
+  
+  // 天候更新（最初のプレイヤー、またはゴールしていない最初のプレイヤーの時）
+  const activePlayers = players.filter(p => !p.goal);
+  if (activePlayers.length > 0 && players[turn] === activePlayers[0]) {
     currentWeather = weathers[Math.floor(Math.random()*weathers.length)];
     document.getElementById("weather-display").innerText = currentWeather.n;
   }
@@ -268,10 +275,13 @@ function closeEvent() {
   if(players.every(pl => pl.goal)) {
     showResults();
   } else {
-    let nextTurn = turn;
-    do {
+    // ターン交代の修正：必ず次の「ゴールしていない」プレイヤーを探す
+    let nextTurn = (turn + 1) % players.length;
+    let safetyCounter = 0;
+    while(players[nextTurn].goal && safetyCounter < players.length) {
       nextTurn = (nextTurn + 1) % players.length;
-    } while (players[nextTurn].goal && !players.every(pl => pl.goal));
+      safetyCounter++;
+    }
     turn = nextTurn;
     updateStatus();
   }
@@ -286,9 +296,13 @@ function triggerTradeUI() {
 }
 
 function executeTradeRoll() {
-  const p = players[turn]; const tid = document.getElementById("trade-target-select").value;
+  const p = players[turn]; 
+  const targetId = parseInt(document.getElementById("trade-target-select").value);
+  const targetPlayer = players.find(pl => pl.id === targetId);
+
   document.getElementById("trade-ui").style.display = "none";
   document.getElementById("game-dice-roll").style.display = "block";
+  
   let c = 0; const t = setInterval(() => {
     let tempRes = Math.floor(Math.random()*6)+1;
     document.getElementById("game-dice-roll").innerText = "🎲 " + tempRes;
@@ -298,7 +312,8 @@ function executeTradeRoll() {
       document.getElementById("game-dice-roll").innerText = "🎲 " + res;
       setTimeout(() => {
         if(res >= 4) {
-          p.money -= 3000; players[tid].money += 3000; 
+          p.money -= 3000; 
+          if(targetPlayer) targetPlayer.money += 3000; 
           p.money += 10000;
           p.pos = Math.min(squares.length-1, p.pos + 3);
           showEvent(p, "大成功✨", "3マス進んで賞金10,000円ゲット！「借りたっけ？もらったｗ」"); renderBoard();
@@ -312,19 +327,39 @@ function executeTradeRoll() {
   }, 60);
 }
 
-function refuseTrade() { document.getElementById("event-overlay").style.display = "none"; startDiceRoll(); }
+function refuseTrade() { 
+  document.getElementById("trade-ui").style.display = "none";
+  document.getElementById("event-overlay").style.display = "none"; 
+  isMoving = false; // フラグをリセットしてからサイコロを振る
+  startDiceRoll(); 
+}
 
 function triggerGekokujo() {
-  const p = players[turn], ace = [...players].sort((a,b)=>b.pos - a.pos)[0];
+  const p = players[turn];
+  // 自分以外の最高進捗プレイヤーを探す
+  const ace = [...players].filter(pl => pl !== p).sort((a,b)=>b.pos - a.pos)[0];
+  if(!ace) return;
+
   document.getElementById("game-dice-roll").style.display = "block";
   showEvent(p, "💥 下剋上", `${ace.name}に挑戦！<br>「そこ、どいて？ｗ」`);
+  
   let c = 0; const t = setInterval(() => {
     document.getElementById("game-dice-roll").innerText = `🎲 ${Math.floor(Math.random()*6)+1} VS 🎲 ${Math.floor(Math.random()*6)+1}`;
     if(++c > 15) {
-      clearInterval(t); const r1 = Math.floor(Math.random()*6)+1, r2 = Math.floor(Math.random()*6)+1;
+      clearInterval(t); 
+      const r1 = Math.floor(Math.random()*6)+1;
+      const r2 = Math.floor(Math.random()*6)+1;
+      document.getElementById("game-dice-roll").innerText = `🎲 ${r1} VS 🎲 ${r2}`;
       setTimeout(() => {
-        if(r1 > r2) { [p.pos, ace.pos] = [ace.pos, p.pos]; showEvent(p, "成功✨", "交代！「エースの座、最高〜ｗ」"); }
-        else { p.money -= 1000; showEvent(p, "失敗💀", "罰金…「次、絶対勝つし。」"); }
+        if(r1 > r2) { 
+          let tempPos = p.pos;
+          p.pos = ace.pos;
+          ace.pos = tempPos;
+          showEvent(p, "成功✨", "交代！「エースの座、最高〜ｗ」"); 
+        } else { 
+          p.money -= 1000; 
+          showEvent(p, "失敗💀", "罰金…「次、絶対勝つし。」"); 
+        }
         renderBoard();
         updateStatus();
       }, 800);
@@ -336,7 +371,9 @@ function startRoulette() {
   document.getElementById("event-overlay").style.display = "flex";
   document.getElementById("roulette-stop").style.display = "inline-block";
   document.getElementById("ev-close").style.display = "none";
-  rouletteTimer = setInterval(() => { document.getElementById("ev-text").innerText = ["💰5,000円","💰10,000円","💰20,000円","💰30,000円"][Math.floor(Math.random()*4)]; }, 50);
+  rouletteTimer = setInterval(() => { 
+    document.getElementById("ev-text").innerText = ["💰5,000円","💰10,000円","💰20,000円","💰30,000円"][Math.floor(Math.random()*4)]; 
+  }, 50);
 }
 
 function stopRoulette() {
