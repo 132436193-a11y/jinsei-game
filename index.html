@@ -145,11 +145,12 @@ function confirmSetup(count) {
   for(let i=0; i<count; i++) {
     const customEmoji = document.getElementById(`e-custom-${i}`).value.trim();
     const selectedEmoji = document.getElementById(`e-${i}`).value;
+    const traitId = document.getElementById(`t-${i}`).value;
     players.push({
       id:i, name:document.getElementById(`n-${i}`).value, 
       emoji: customEmoji.length > 0 ? customEmoji : selectedEmoji, 
       pos:0, money:0, goal:false, 
-      trait:traits.find(tr=>tr.id===document.getElementById(`t-${i}`).value), 
+      trait:traits.find(tr=>tr.id===traitId), 
       skip:false
     });
   }
@@ -171,7 +172,7 @@ function updateStatus() {
   const statusArea = document.getElementById("statusArea");
   statusArea.innerHTML = players.map((p, i) => {
     return `<div class="money-card ${i===turn?'active-p':''}">
-      <b>${p.emoji}${p.name}</b><br>💰${p.money.toLocaleString()}
+      <b>${p.emoji}${p.name}</b> [${p.trait.n}]<br>💰${p.money.toLocaleString()}
     </div>`;
   }).join("");
   document.getElementById("revolt-btn").style.display = (!players[turn].goal && turn !== 0)?"block":"none";
@@ -180,16 +181,10 @@ function updateStatus() {
 function rollDice() {
   if(isMoving || players[turn].goal) return;
   if(players[turn].money < 0) { triggerTradeUI(); return; }
+  if(players[turn].skip) { players[turn].skip = false; showEvent(players[turn], "復帰", "コートに戻った！「待たせたねｗ」"); return; }
   
-  if(players[turn].skip) { 
-    players[turn].skip = false; 
-    showEvent(players[turn], "復帰", "コートに戻った！「待たせたねｗ」"); 
-    return; 
-  }
-  
-  // 天候更新（最初のプレイヤー、またはゴールしていない最初のプレイヤーの時）
-  const activePlayers = players.filter(p => !p.goal);
-  if (activePlayers.length > 0 && players[turn] === activePlayers[0]) {
+  // 天候の更新（ターン開始時に天候を決める）
+  if (turn === 0 || players.slice(0, turn).every(pl => pl.goal)) {
     currentWeather = weathers[Math.floor(Math.random()*weathers.length)];
     document.getElementById("weather-display").innerText = currentWeather.n;
   }
@@ -206,8 +201,9 @@ function startDiceRoll() {
       clearInterval(timer);
       let dice = Math.floor(Math.random()*6)+1;
       let bonus = players[turn].trait.bonus(currentWeather);
-      document.getElementById("diceNum").innerText = `🎲 ${dice}${bonus > 0 ? ' + '+bonus : ''}`;
-      setTimeout(() => movePlayer(dice + bonus), 600);
+      let total = dice + bonus;
+      document.getElementById("diceNum").innerHTML = `🎲 ${dice}${bonus > 0 ? '<span style="color:red; font-size:20px;">+'+bonus+'</span>' : ''}`;
+      setTimeout(() => movePlayer(total), 600);
     }
   }, 60);
 }
@@ -235,7 +231,12 @@ function movePlayer(steps) {
     let amount = s.m || 0;
     p.money += amount;
     if(s.skip) p.skip = true;
-    if(s.move) { p.pos = Math.max(0, Math.min(squares.length-1, p.pos+s.move)); setTimeout(renderBoard, 400); }
+    if(s.move) { 
+        setTimeout(() => {
+            p.pos = Math.max(0, Math.min(squares.length-1, p.pos+s.move)); 
+            renderBoard();
+        }, 500);
+    }
     showEvent(p, "イベント", s.txt + (amount!==0 ? `<br>💰${amount.toLocaleString()}円` : ""));
     updateStatus();
   }
@@ -275,12 +276,10 @@ function closeEvent() {
   if(players.every(pl => pl.goal)) {
     showResults();
   } else {
-    // ターン交代の修正：必ず次の「ゴールしていない」プレイヤーを探す
+    // 次の有効なプレイヤーへターンを渡す修正
     let nextTurn = (turn + 1) % players.length;
-    let safetyCounter = 0;
-    while(players[nextTurn].goal && safetyCounter < players.length) {
+    while (players[nextTurn].goal) {
       nextTurn = (nextTurn + 1) % players.length;
-      safetyCounter++;
     }
     turn = nextTurn;
     updateStatus();
@@ -297,12 +296,11 @@ function triggerTradeUI() {
 
 function executeTradeRoll() {
   const p = players[turn]; 
-  const targetId = parseInt(document.getElementById("trade-target-select").value);
-  const targetPlayer = players.find(pl => pl.id === targetId);
+  const targetId = document.getElementById("trade-target-select").value;
+  const targetPlayer = players.find(pl => pl.id == targetId);
 
   document.getElementById("trade-ui").style.display = "none";
   document.getElementById("game-dice-roll").style.display = "block";
-  
   let c = 0; const t = setInterval(() => {
     let tempRes = Math.floor(Math.random()*6)+1;
     document.getElementById("game-dice-roll").innerText = "🎲 " + tempRes;
@@ -330,36 +328,31 @@ function executeTradeRoll() {
 function refuseTrade() { 
   document.getElementById("trade-ui").style.display = "none";
   document.getElementById("event-overlay").style.display = "none"; 
-  isMoving = false; // フラグをリセットしてからサイコロを振る
   startDiceRoll(); 
 }
 
 function triggerGekokujo() {
-  const p = players[turn];
-  // 自分以外の最高進捗プレイヤーを探す
-  const ace = [...players].filter(pl => pl !== p).sort((a,b)=>b.pos - a.pos)[0];
-  if(!ace) return;
+  const p = players[turn]; 
+  const ace = [...players].sort((a,b)=>b.pos - a.pos)[0];
+  if(ace === p) return;
 
   document.getElementById("game-dice-roll").style.display = "block";
   showEvent(p, "💥 下剋上", `${ace.name}に挑戦！<br>「そこ、どいて？ｗ」`);
-  
   let c = 0; const t = setInterval(() => {
     document.getElementById("game-dice-roll").innerText = `🎲 ${Math.floor(Math.random()*6)+1} VS 🎲 ${Math.floor(Math.random()*6)+1}`;
     if(++c > 15) {
       clearInterval(t); 
-      const r1 = Math.floor(Math.random()*6)+1;
+      const r1 = Math.floor(Math.random()*6)+1; 
       const r2 = Math.floor(Math.random()*6)+1;
       document.getElementById("game-dice-roll").innerText = `🎲 ${r1} VS 🎲 ${r2}`;
       setTimeout(() => {
         if(r1 > r2) { 
-          let tempPos = p.pos;
+          let oldPos = p.pos;
           p.pos = ace.pos;
-          ace.pos = tempPos;
+          ace.pos = oldPos;
           showEvent(p, "成功✨", "交代！「エースの座、最高〜ｗ」"); 
-        } else { 
-          p.money -= 1000; 
-          showEvent(p, "失敗💀", "罰金…「次、絶対勝つし。」"); 
         }
+        else { p.money -= 1000; showEvent(p, "失敗💀", "罰金…「次、絶対勝つし。」"); }
         renderBoard();
         updateStatus();
       }, 800);
@@ -371,17 +364,14 @@ function startRoulette() {
   document.getElementById("event-overlay").style.display = "flex";
   document.getElementById("roulette-stop").style.display = "inline-block";
   document.getElementById("ev-close").style.display = "none";
-  rouletteTimer = setInterval(() => { 
-    document.getElementById("ev-text").innerText = ["💰5,000円","💰10,000円","💰20,000円","💰30,000円"][Math.floor(Math.random()*4)]; 
-  }, 50);
+  rouletteTimer = setInterval(() => { document.getElementById("ev-text").innerText = ["💰5,000円","💰10,000円","💰20,000円","💰30,000円"][Math.floor(Math.random()*4)]; }, 50);
 }
 
 function stopRoulette() {
   clearInterval(rouletteTimer);
   const p = players[turn];
   const text = document.getElementById("ev-text").innerText;
-  const match = text.replace(/,/g, '').match(/\d+/);
-  const val = match ? parseInt(match[0]) : 0;
+  const val = parseInt(text.replace(/[^0-9]/g, ""));
   
   p.money += val;
   document.getElementById("roulette-stop").style.display = "none";
