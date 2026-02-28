@@ -210,6 +210,7 @@ function movePlayer(steps) {
       let target = others[Math.floor(Math.random()*others.length)];
       p.pairWith = target.id; target.pairWith = p.id;
       showEvent(p, "🤝 ダブルス結成！", `${target.name}とペアを組んだ！<br>「今日から運命共同体だよｗ」`);
+      updateStatus();
       return;
     }
   }
@@ -218,6 +219,7 @@ function movePlayer(steps) {
   else if(s.taxAll) {
     players.forEach(pl => { if(!pl.goal) pl.money -= 3000; });
     showEvent(p, "連帯責任", s.txt+"<br>全員-3000円！");
+    updateStatus();
   } else {
     let amount = s.m || 0;
     if(p.pairWith !== null) { players[p.pairWith].money += amount; }
@@ -225,6 +227,7 @@ function movePlayer(steps) {
     if(s.skip) p.skip = true;
     if(s.move) { p.pos = Math.max(0, Math.min(squares.length-1, p.pos+s.move)); setTimeout(renderBoard, 400); }
     showEvent(p, "イベント", s.txt + (amount!==0 ? `<br>💰${amount.toLocaleString()}円` : ""));
+    updateStatus();
   }
 }
 
@@ -247,7 +250,6 @@ function closeEvent() {
   if(players.every(pl => pl.goal)) {
     showResults();
   } else {
-    // ターン交代：ゴールしていない次の人を探す
     let nextTurn = turn;
     do {
       nextTurn = (nextTurn + 1) % players.length;
@@ -280,6 +282,7 @@ function executeTradeRoll() {
         } else {
           p.money -= 3000; showEvent(p, "大失敗💀", "罰金…「今のなし！ｗ」");
         }
+        updateStatus();
       }, 800);
     }
   }, 60);
@@ -299,6 +302,7 @@ function triggerGekokujo() {
         if(r1 > r2) { [p.pos, ace.pos] = [ace.pos, p.pos]; showEvent(p, "成功✨", "交代！「エースの座、最高〜ｗ」"); }
         else { p.money -= 3000; showEvent(p, "失敗💀", "罰金…「次、絶対勝つし。」"); }
         renderBoard();
+        updateStatus();
       }, 800);
     }
   }, 60);
@@ -312,9 +316,18 @@ function startRoulette() {
 
 function stopRoulette() {
   clearInterval(rouletteTimer);
-  let val = parseInt(document.getElementById("ev-text").innerText.match(/\d+/) || 0);
-  players[turn].money += val;
+  const p = players[turn];
+  const text = document.getElementById("ev-text").innerText;
+  const match = text.match(/\d+/);
+  const val = match ? parseInt(match[0]) : 0;
+  
+  p.money += val;
+  if(p.pairWith !== null) {
+    players[p.pairWith].money += val;
+  }
+  
   document.getElementById("roulette-stop").style.display = "none";
+  updateStatus();
 }
 
 function showResults() {
